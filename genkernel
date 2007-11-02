@@ -1,0 +1,248 @@
+#!/bin/bash 
+# genkernel v4
+# -- the main genkernel script
+
+# Copyright: 2006 plasmaroo@gentoo,org, rocket@gentoo.org
+# License: GPLv2
+
+PATH='/bin:/usr/bin:/sbin:/usr/sbin'
+GK_V='4.0.0_alpha_tag_20070622'
+
+# Needs to be here in case sourcing a file fails. 
+die() {
+  echo "${BAD}Error${NORMAL}: $1"
+  exit 1
+}
+
+
+# Autodetect genkernel home if its not set as an env variable
+PATH="${PATH} $(dirname $0)"
+if [ "$GENKERNEL_HOME" == "" ]
+then
+    for i in $PATH
+    do
+        if [ -f "$i/core/gen_initialize.sh" ]
+        then
+            cd $i
+            GENKERNEL_HOME=`pwd`
+            break
+        fi
+    done
+fi
+if [ "$GENKERNEL_HOME" == "" ]
+then
+    echo "GENKERNEL_HOME could not be set."
+    exit 1
+fi
+
+CORE_DIR="$GENKERNEL_HOME/core"
+MODULES_DIR="$GENKERNEL_HOME/modules"
+CONFIG_DIR="$GENKERNEL_HOME/configs/"
+CONFIG_GENERIC_DIR="$GENKERNEL_HOME/configs/generic"
+CACHE_DIR="$GENKERNEL_HOME/cache/"
+GMI_DIR="$GENKERNEL_HOME/gmi"
+SRCPKG_DIR="$GENKERNEL_HOME/dist"
+FIXES_FILES_DIR="$GENKERNEL_HOME/fixes/files"
+FIXES_PATCHES_DIR="$GENKERNEL_HOME/fixes/patches"
+
+if [ -f /etc/genkernel/genkernel.conf ]
+then
+    source /etc/genkernel/genkernel.conf || die "Failed to source /etc/genkernel/genkernel.conf"
+else
+    source ${GENKERNEL_HOME}/genkernel.conf || die "Failed to source ${GENKERNEL_HOME}/genkernel.conf"
+fi
+
+source ${CORE_DIR}/gen_coreFunctions.sh || die "Failed to source gen_coreFunctions.sh"
+source ${CORE_DIR}/gen_kernel_cmdline.sh || die "Failed to source gen_kernel_cmdline.sh"
+source ${CORE_DIR}/gen_dependencyEngine.sh || die "Failed to source gen_dependencyEngine.sh"
+source ${CORE_DIR}/gen_processPackages.sh || die "Failed to source gen_processPackages.sha"
+source ${CORE_DIR}/gen_processKernelTree.sh || die "Failed to source gen_processKernelTree.sh"
+source ${CORE_DIR}/gen_cmdline.sh || die "Failed to source gen_cmdline.sh"
+source ${CORE_DIR}/gen_profile.sh || die "Failed to source gen_profile.sh"
+source ${CORE_DIR}/gen_help_setup.sh || die "Failed to source gen_help_setup.sh"
+source ${CORE_DIR}/gen_initialize.sh || die "Failed to source gen_initialize.sh"
+source ${CORE_DIR}/gen_initramfs.sh || die "Failed to source gen_initramfs.sh"
+source ${CORE_DIR}/gen_file_check.sh || die "Failed to source gen_file_check.sh"
+source ${CORE_DIR}/gen_cfg.sh || die "Failed to source gen_cfg.sh"
+
+#trap trap_cleanup SIGHUP SIGQUIT SIGINT SIGTERM SIGKILL
+
+# Parse all command line options...
+Options=$@
+
+# Internal flag to check if config parsing succeeded
+__INTERNAL__CONFIG_PARSING_FAILED=false
+while [ $# -gt 0 ]
+do
+	Option=$1; shift
+	parse_cmdline $Option 
+done
+
+# Need to see if the user has overridden the arch; Setup the user profile space has to happen before genkernel_determine_arch
+# Merge the profiles first
+for i in $(profile_list); do
+	if [ "${i:0:8}" == "cmdline-" ]
+	then
+		profile_copy $i "user"
+		
+		# Copy the modules into its own profiles
+		for j in $(profile_list_keys $i); do
+			if [ "${j:0:7}" == "module-" ]
+			then
+				profile_copy_key ${i} ${j} "modules-$i"
+			fi
+		done
+	fi
+done
+
+# Override with the cmdline
+profile_copy cmdline "user"
+
+determine_profile
+
+# We now know the profile so set default CACHE_DIR and CONFIG_DIR
+CACHE_DIR="${CACHE_DIR}/$(profile_get_key profile)"
+CONFIG_DIR="${CONFIG_DIR}/$(profile_get_key profile)"
+
+# setup the systems profile and copy it into the running profile
+setup_system_profile
+profile_copy "system"
+
+# Copy the user profile created with the setup_userspace function. Last profile to import
+# as this one overrides the rest of them. This contains the cmdline and imported profiles
+profile_copy "user"
+
+# Set TEMP if tempdir is defined
+[ -n "$(profile_get_key tempdir)" ] && TEMP="$(profile_get_key tempdir)"
+
+set_color 
+
+# Failed to parse the cmdline properly, die so we can investigate...
+if logicTrue ${__INTERNAL__CONFIG_PARSING_FAILED}
+then
+    if logicTrue $(profile_get_key help)
+    then
+        echo 'Fatal error processing arguments...'
+        show_help
+        exit 1
+    fi
+    show_usage 
+    echo 'Fatal error processing arguments; exiting...'
+    exit 1
+else
+    if logicTrue $(profile_get_key help) 
+    then
+        show_help
+        exit 0
+    fi
+fi
+
+
+# Generate TEMP dir
+if [ ! -d "${TEMP}" ]
+then
+	mkdir -p "${TEMP}" || die "Failed to create temporary directory!"
+fi
+
+# remove the genkernel-output folder if it exists
+rm -r ${TEMP}/genkernel-output >/dev/null 2>&1
+
+
+clear_log
+genkernel_print_header
+
+# FIXME: Needs to be absolute path
+if [ ! -w ${CACHE_DIR} ]
+then
+	if [ ! -w $(dirname ${CACHE_DIR}) ]
+   	then
+		echo "CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
+		if [ ! -w ${TEMP} ]
+		then
+			die "Could not write to ${TEMP}/genkernel_cache/$(profile_get_key profile).  Set CACHE_DIR in genkernel.conf to use a writeable cache directory."
+		fi
+		CACHE_DIR="${TEMP}/genkernel_cache/$(profile_get_key profile)/"
+	fi
+		
+	# Make the cache directory if it doesnt exist
+	[ -e "${CACHE_DIR}" ] || mkdir -p "${CACHE_DIR}"
+
+fi
+
+
+genkernel_lookup_packages
+genkernel_lookup_kernel
+
+if [ "$(profile_get_key debuglevel)" -gt "4" ]
+then
+	for i in $(profile_list)
+	do
+		profile_list_contents $i
+	done
+	echo
+fi
+[ -n "$(profile_get_key profile-dump)" ] && config_profile_dump
+
+# Check if any modules to execute were specified
+if [ -z "$(profile_get_key 'gk-run-modules')" ]
+then
+	echo 'Fatal error: no modules to execute specified...'
+	show_usage
+	exit 1
+fi
+
+
+
+# Process depends
+print_info 1 '>> Processing dependency tree...'
+require "$(profile_get_key 'gk-run-modules')"
+
+# Repeat the process since we now (might) have package-based callbacks
+# Sourcing the dependency engine an additional engine makes the scrubber code erase
+# previously calculated deptrees, which is what we want here.
+source ${CORE_DIR}/gen_dependencyEngine.sh || die "Failed to resource gen_dependencyEngine.sh"
+
+# Reprocess
+genkernel_lookup_packages
+genkernel_lookup_kernel silent
+require "$(profile_get_key 'gk-run-modules')"
+
+# Create the cache dir if it doesn't exist
+setup_cache_dir
+
+# Die if we are missing required files
+files_register_read
+
+setup_cross_compile
+setup_arch
+
+if logicTrue $(profile_get_key single-cpio) && [ ! "$UID" == 0 ]
+then
+    die "The single cpio option requires genkernel be run as root"
+fi
+
+# If we have a callback set require the callback module
+[ -n "$(profile_get_key callback)" ] && require callback
+for i in $(buildDepTreeSolution)
+do
+	[ "${i}" == "genkernel" ] && continue
+
+	print_info 1 ">> Executing module $i..."
+	$i:: || die "$i module call failed!"
+done
+
+# End of execution for now
+exit 255
+
+# Clean up...
+[ -n "${CTEMP}" ] && rm -rf "${TEMP}"
+
+## >> FIXME: this needs to be displayed only if the kernel compile fails
+print_info 1 'Do NOT report kernel bugs as genkernel bugs unless your bug'
+print_info 1 'is about the default genkernel configuration...'
+print_info 1 ''
+print_info 1 'Make sure you have the latest genkernel before reporting bugs.'
+## <<
+
+# Final Cleanup
+cleanup

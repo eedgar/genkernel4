@@ -1,0 +1,41 @@
+--- uClibc/libc/inet/resolv.c	(revision 15758)
++++ uClibc/libc/inet/resolv.c	(working copy)
+@@ -2259,6 +2259,7 @@ int gethostbyaddr_r (const void *addr, s
+ 	struct in6_addr	*in6;
+ 	struct in6_addr	**addr_list6;
+ #endif /* __UCLIBC_HAS_IPV6__ */
++	char **alias;
+ 	unsigned char *packet;
+ 	struct resolv_answer a;
+ 	int i;
+@@ -2319,6 +2320,12 @@ int gethostbyaddr_r (const void *addr, s
+ 	buf+=sizeof(*addr_list)*2;
+ 	buflen-=sizeof(*addr_list)*2;
+ 
++	if (buflen < sizeof(char *)*(ALIAS_DIM))
++		return ERANGE;
++	alias=(char **)buf;
++	buf+=sizeof(*alias)*(ALIAS_DIM);
++	buflen-=sizeof(*alias)*(ALIAS_DIM);
++
+ #ifdef __UCLIBC_HAS_IPV6__
+ 	if (plen < sizeof(*in6))
+ 		return ERANGE;
+@@ -2367,6 +2374,9 @@ int gethostbyaddr_r (const void *addr, s
+ 
+ 	addr_list[1] = 0;
+ 
++	alias[0] = buf;
++	alias[1] = 0;
++
+ 	for (;;) {
+ 
+ 	BIGLOCK;
+@@ -2413,6 +2423,7 @@ int gethostbyaddr_r (const void *addr, s
+     		}
+ 
+ 			result_buf->h_addr_list = (char **) addr_list;
++			result_buf->h_aliases = alias;
+ 			break;
+ 		} else {
+ 			free(packet);

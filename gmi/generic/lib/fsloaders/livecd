@@ -1,0 +1,271 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# LiveCD root fs loader for genkernel
+#
+# ./livecd --do-mount mountpoint device opts
+#
+# opts can only be 'docache' for now
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+# TODO: Tested only on booting over a network image (nfs, http, ftp), not 
+# from a block device (cd drive)
+
+parameters() {
+        echo 'device opts'
+}
+
+help() {
+cat << EOHELP
+usage: livecd[:device[:opts]]
+example: 'root=livecd'
+         'root=livecd:/dev/hdc:docache'
+         'root=livecd::docache'
+parameters are 
+[device]       device containing the LiveCD medium
+[opts]         can be 'docache' to cache the LiveCD image
+EOHELP
+}
+
+mount_cd_or_iso() {
+	local mountpoint="${1}"
+	local device="${2}"
+	local DEVICES
+	local dev
+	local got_good_root
+
+	if [ -n "${device}" ]
+	then
+		dbg_msg "Trying to mount LiveCD as loopback file (from ${device})"
+		${FSLOADERS}/loop --do-mount ${mountpoint} ${device}
+		dbg_res
+	fi
+
+	if [ -e ${mountpoint}/livecd ]
+	then
+		dbg_msg "LiveCD mounted from loopback file"
+		return 0
+	else
+		dbg_msg "Not a loopback LiveCD"
+		umount ${mountpoint} 2> /dev/null
+		dbg_msg "Trying to mount LiveCD from block device"
+
+		is_set "${device}" && DEVICES="$DEVICES ${devices}" 
+		DEVICES="$DEVICES /dev/hd[a-z]" # IDE devices
+		DEVICES="$DEVICES /dev/iseries/vcd*" # iSeries Devices
+		DEVICES="$DEVICES /dev/sd*" # USB Keychain
+		DEVICES="$DEVICES /dev/sr*" # UML DEVICES
+		DEVICES="$DEVICES /dev/ubd* /dev/ubd/*" # UML DEVICES
+
+		got_good_root="no"
+		for dev in ${DEVICES}
+		do
+			# Check for a block device to mount
+			if [ -b "${dev}" ]
+			then
+				good_msg "Attempting to mount CD from: ${dev}..."
+				mount -r ${dev} ${mountpoint} > /dev/null 2>&1
+				if [ -e ${mountpoint}/livecd ]
+				then
+					dbg_msg "LiveCD mounted from device ${dev}"
+					got_good_root="yes"
+				else
+					dbg_msg "Not a proper CD medium; unmounting"
+					umount ${mountpoint} 2> /dev/null
+					dbg_res
+				fi
+			fi
+		done
+	fi
+
+	[ "${got_good_root}" = "no" ] && return 1
+	return 0
+}
+
+test_root_sanity() {
+        ### TODO : must find someway to test if the resulting env is OK for booting in it
+        ### idea : test for some random known binaries
+        [ -x "/bin/sh" -a -x "/sbin/init" ] || return 1
+}
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local device="${2}"
+	local opts="${3}"
+	local retval
+	local dev
+	local got_good_root
+	local link
+	local file
+	local directory
+	local im
+	local var
+        local imagedir
+        local cdmount
+	local ROOT_TREES='etc root home var'
+	local ROOT_LINKS='bin sbin lib lib32 lib64 boot usr opt'
+
+	register_env "CDBOOT=1"
+
+	# If we are in a unionfs stack, don't bother using the symlink
+	# trick to get RW root.  We will directly mount the squashfs as the
+	# root and overlay something over it
+	if [ "${USE_UNIONFS}" = "yes" ]
+	then
+		cdmount=$( mkmntpoint )
+		imagedir=$( mkmntpoint )
+		mount -t tmpfs tmpfs ${imagedir}
+	else
+		dbg_msg "Making tempfs for ${mountpoint}"
+		mount -t tmpfs tmpfs ${mountpoint}
+
+		dbg_msg "Creating directories and files for LiveCD"
+		for dev in dev mnt mnt/cdrom mnt/livecd tmp tmp/.initrd mnt/gentoo sys
+		do
+			mkdir -p ${mountpoint}/${dev}
+			chmod 755 ${mountpoint}/${dev}
+		done
+
+		cdmount="${mountpoint}/mnt/cdrom"
+		imagedir="${mountpoint}/mnt"
+	fi
+
+	mount_cd_or_iso ${cdmount} ${device}
+	assert "$?" "Could not mount a LiveCD image" || return 1
+
+	# Caching of the loop fs if wanted
+	if has "docache" "${opts}"
+	then
+		good_msg "Copying loop file for caching"
+
+		if ls ${cdmount}/image.* > /dev/null
+		then 
+			cp -a ${cdmount}/image.* ${imagedir}/ 2> /dev/null
+			retval=$?
+		else
+			cp -a ${cdmount}/livecd.* ${imagedir}/ 2> /dev/null
+			retval=$?
+		fi
+
+		if [ "${retval}" -ne 0 ]
+		then
+			warn_msg "Failed to cache the loop file.  Lack of memory space?"
+			rm -rf ${imagedir}/image.* ${imagedir}/livecd.* 2>/dev/null
+		fi
+	fi
+
+	# look for an image, the loop mounter will take care
+	# of finding type and mouting for us
+	for im in $( ls ${imagedir}/image.* ${imagedir}/livecd.* ${cdmount}/image.* ${cdmount}/livecd.* 2> /dev/null )
+	do
+		if  [ "${USE_UNIONFS}" = "yes" ]
+		then
+			# If we use a union, no need for taking care of symlink black magic to have 
+			# a pseudo-RW system, the user knows what it wants on top the the LiveCD image
+			dbg_msg "Mounting the LiveCD directly on the root fs (unionfs on top)"
+			${FSLOADERS}/loop --do-mount ${mountpoint} ${im}
+			dbg_res
+
+                        test_root_sanity
+			assert "$?" "The mounted LiveCD root filesystem is not sane" || return 1
+			# We exit now, we use UnionFS and we don't need to go through the
+			# copying magic
+			return 0
+		else
+			${FSLOADERS}/loop --do-mount ${imagedir}/livecd ${im}
+			if assert "$?" "Could not mount LiveCD loopback image '${im}'"
+			then
+				break
+			else
+				return 1
+			fi
+		fi
+	done
+
+	#
+	# Only non-union continues here...
+	#
+
+	FS_LOCATION=mnt/livecd
+
+	good_msg "Copying read-write image contents to memory..."
+	# Copy over stuff that should be writable
+	cd ${mountpoint}/${FS_LOCATION}
+	cp -a ${ROOT_TREES} ${mountpoint}
+
+	cd ${mountpoint}
+	# Now we do the links.
+	for link in ${ROOT_LINKS}
+	do
+		if [ -L "${mountpoint}/${FS_LOCATION}/${link}" ]
+		then
+			ln -s "$( readlink ${mountpoint}/${FS_LOCATION}/${link} )" "${link}" 2>/dev/null
+		else
+			# List all subdirectories of link
+			for directory in $( find "${mountpoint}/${FS_LOCATION}/${link}" -type d 2>/dev/null ) 
+			do
+				## Strip the prefix of the FS_LOCATION
+				directory=${directory#${mountpoint}/${FS_LOCATION}/}
+
+				## Skip this directory if we already linked a parent directory
+				if [ "${curent_parrent}" != '' ]
+				then
+					var=$( echo "${directory}" | grep "^${curent_parrent}" )
+					if [ "${var}" != '' ]
+					then
+						continue
+					fi
+				fi
+				## Test if the directory exists already
+				if [ -e "/${mountpoint}/${directory}" ]
+				then
+					# It does exist, link all the individual files
+					for file in $( ls /${mountpoint}/${FS_LOCATION}/${directory} )
+					do
+						if [ ! -d "/${mountpoint}/${FS_LOCATION}/${directory}/${file}" ] && \
+							[ ! -e "${mountpoint}/${directory}/${file}" ]
+						then
+							ln -s "${FS_LOCATION}/${directory}/${file}" "${directory}/${file}" 2> /dev/null
+						fi
+					done
+				else
+					# It does not exist, make a link to the livecd
+					ln -s "${FS_LOCATION}/${directory}" "${directory}" 2>/dev/null
+					current_parent=${directory}
+				fi
+			done
+		fi
+	done
+
+	mkdir initrd proc tmp sys 2>/dev/null
+	chmod 1777 tmp
+
+        test_root_sanity
+	assert "$?" "The mounted LiveCD root filesystem is not sane" || return 1
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

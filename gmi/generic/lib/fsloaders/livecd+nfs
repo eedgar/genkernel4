@@ -1,0 +1,70 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# LiveCD over NFS root fs loader for genkernel
+#
+# ./livecd+nfs --do-mount mountpoint ip cdfilepath livecdopts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+        echo 'ip cdfilepath livecdopts'
+}
+
+
+help() {
+cat << EOHELP
+usage: livecd+nfs:<ip>:<cdfilepath>[:livecd_opts]
+example: 'root=livecd+nfs:192.168.0.1:/mnt/livecds/2006.1.iso'
+         'root=livecd+nfs:192.168.0.1:/mnt/livecds/2006.1.iso:docache'
+parameters are 
+<ip>           IP address of the NFS server
+<cdfilepath>   full path of the ISO file
+[livecd_opts]  can be 'docache' to cache the LiveCD image
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local server_ip="${2}"
+	local cdfilepath="${3}"
+	local livecdopts="${4}"
+	local loop_mntpoint
+
+	loop_mntpoint="$( mkmntpoint )"
+
+	dbg_msg "Mounting NFS share ${server_ip}:$( dirname ${cdfilepath} )"
+	${FSLOADERS}/nfs --do-mount ${loop_mntpoint} ${server_ip} $( dirname ${cdfilepath} ) ro,nolock
+	[ "$?" != "0" ] && return 1
+
+	dbg_msg "Mounting LiveCD"
+	${FSLOADERS}/livecd --do-mount ${mountpoint} ${loop_mntpoint}/$( basename ${cdfilepath} ) ${livecdopts}
+	return $?
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

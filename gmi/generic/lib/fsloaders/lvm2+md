@@ -1,0 +1,75 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# LVM2 over MD RAID device root fs loader for genkernel
+#
+# ./lvm2+md --do-mount mountpoint lvmdevice mddevices mount_opts
+#
+# 'mddevices' are ',' separated (eg "/dev/md0,/dev/md2")
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+### TODO: UNTESTED
+
+
+parameters() {
+        echo 'lvmdevice mddevices mount_opts'
+}
+
+
+help() {
+cat << EOHELP
+usage: lvm2+md:<lvmdevice>:<mddevices>[:mount_opts] 
+example: 'root=lvm2+md:/dev/vg/root:/dev/md0'
+         'root=lvm2+md:/dev/volgroup/vol1:/dev/md1,/dev/md2:ro,noatime'
+parameters are
+<lvmdevice>    device containing the filesystem
+<mddevices>    list of md devices to setup before scanning for LVM2 devices
+[mount_opts]   parameters to pass at mounting of the filesystem
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local lvmdevice="${2}"
+	local mddevices="${2}"
+	local mount_opts="${3}"
+	local dev
+
+	for dev in $( echo "${devices}" | sed 's/,/ /g' )
+	do
+		dbg_msg 'Asking md to setup ${dev}'
+		${FSLOADERS}/md --setup-device "${dev}"
+		assert "$?" "Could not setup MD device '${dev}'" || return 1
+	done
+
+	dbg_msg "${FSLOADERS}/lvm2 --do-mount ${mountpoint} ${lvmdevice} ${mount_opts}"
+	${FSLOADERS}/lvm2 --do-mount ${mountpoint} ${lvmdevice} ${mount_opts}
+	return $?
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

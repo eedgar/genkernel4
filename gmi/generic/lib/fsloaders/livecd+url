@@ -1,0 +1,83 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# LiveCD over HTTP or FTP root fs loader for genkernel
+#
+# ./livecd+{http,ftp} --do-mount mountpoint url opts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+	echo 'url livecdopts'
+}
+
+
+help() {
+cat << EOHELP
+usage: livecd+url:<url>[:livecdopts]
+example: 'root=livecd+url:http://gentoo.org/2006.1.iso'
+parameters are 
+<url>          HTTP or FTP address of an ISO LiveCD medium
+[livecdopts]   can be 'docache' to cache the LiveCD image (not very useful...)
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local url1="${2}"
+	local url2="${3}"
+	local opts="${4}"
+	local url
+	local iso_tmpfs
+
+	# http://www.xyz.com, the ':' will be interpreted as separator by 'init'
+	# must shift options to the left and rewrite ${url}
+	if [ "${url1}" = "http" -o "${url1}" = "ftp" ]
+	then
+		url="${url1}:${url2}"
+	else
+		# we got it right in ${url1}, need to shift
+		# some parameters
+		url="${url1}"
+		opts="${url2}"
+	fi
+
+	dbg_msg "Downloading ISO image to memory"
+	dbg_msg "from ${url}"
+	iso_tmpfs="$( mkmntpoint )"
+	mount -t tmpfs tmpfs "${iso_tmpfs}"
+	cd "${iso_tmpfs}"
+	wget -O loop.iso "${url}"
+	assert "$?" "Could not download LiveCD image from '${url}'" || return 1
+
+	dbg_msg "Mounting LiveCD"
+	${FSLOADERS}/livecd --do-mount ${mountpoint} ${iso_tmpfs}/loop.iso ${opts}
+	return $?
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+	"--parameters")
+		parameters
+		;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+              	;;
+	*)
+		exit 1
+		;;
+esac

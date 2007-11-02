@@ -1,0 +1,77 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and
+#                Jean-Francois Richard <jean-francois@richard.name>
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# LUKS over block device root fs loader for genkernel
+#
+# ./luks --do-mount mountpoint device mount_opts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+### TODO: Untested, have cryptsetup in the initramfs...
+
+
+parameters() {
+        echo 'device mount_opts'
+}
+
+
+help() {
+cat << EOHELP
+usage: luks+block:<device>[:mount_opts]
+example: 'root=luks+block:/dev/hda2'
+         'root=luks+block:/dev/hda2:ro,noatime'
+parameters are
+<device>       device containing the filesystem
+[mount_opts]   parameters to pass at mounting of the filesystem
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local device="${2}"
+	local mount_opts="${3}"
+	local id
+
+	if [ -e /sbin/cryptsetup ]
+	then
+		cryptsetup isLuks ${device}
+		assert "$?" "Not a LUKS device: '${device}'" || return 1
+
+		# need to have unique id for the device to be unionfs-isable
+		id=$( counter )
+		cryptsetup luksOpen ${device} root${id}
+		assert "$?" "Unable to open LUKS device '${device}'" || return 1
+
+		${LIBGMI}/fsloaders/block --do-mount ${mountpoint} /dev/mapper/root${id} ${mount_opts}
+		return "$?"
+	else
+		bad_msg "/bin/cryptsetup not found: skipping LUSK volume setup!"
+		return 1
+	fi
+}
+
+
+case "${1}" in
+	"--help")
+		help
+		;;
+	"--parameters")
+		parameters
+		;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

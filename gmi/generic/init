@@ -1,0 +1,430 @@
+#!/bin/busybox sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+# Initialization script called by kernel at boot.
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+### TODO: splash stuff...
+[ -e /etc/initrd.splash ] && . /etc/initrd.splash
+
+/bin/busybox mount -o remount,rw / 2>/dev/null
+/bin/busybox mount -t proc proc /proc 2>/dev/null
+/bin/busybox mount -t sysfs /sys /sys 2>/dev/null
+
+# Setup the busybox applets
+/bin/busybox --install -s
+
+if [ "$$" != '1' ]
+then
+	echo '/init has to be run as the init process with a PID of 1'
+	exit 1
+fi
+
+### TODO: splash stuff...
+splash 'init'
+
+# mv /sbin/insmod to /bin/insmod or modprobe breaks 
+# Busybox 1.1.0
+[ -e /sbin/insmod ] && mv /sbin/insmod /bin/insmod
+
+# suppress kernel messages
+quiet_kmsg 
+
+# busybox udev replacement
+mdev -s
+
+# catch udev hotplug events
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+
+# Read the cmdline settings
+CMDLINE=$(cat /proc/cmdline)
+parse_cmdline
+
+# Artwork is always good :)
+echo
+echo -e "   ${GOOD}GMI${NORMAL}${BOLD} starting ...${NORMAL}"
+echo
+
+# Must export it for external scripts
+[ -n "${DEBUG}" ] && export DEBUG="yes"
+
+# load the kernel modules
+load_modules
+
+detect_sbp2_devices
+
+# Make needed directories
+mkdir /tmp
+mkdir -p ${ROOTFS}
+mkdir -p ${GMIMNT}
+# because we may mount-move it further down... need tmpfs
+mount -t tmpfs tmpfs ${GMIMNT}
+mkdir -p ${UNIONS}
+mkdir -p ${MNTOTHER}
+
+
+# Networking setup and error recovery
+got_good_net="no"
+while [ "${got_good_net}" != "yes" ]
+do
+	if [ "${IP}" = "continue" ]
+	then
+		break
+	fi
+
+	setup_networking
+
+	if ! assert "$?" "Unable to setup networking." && [ "${IP_NOFAIL}" != 'yes' ]
+	then
+		bad_msg 
+		bad_msg "The IP parameter format is:"
+		bad_msg "\t'ip=<client-ip>::<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>'"
+		bad_msg "\t\tyou may leave <netmask>, <hostname>, <device> and <autoconf>"
+		bad_msg "\t\tempty to use defaults (you can remove trailing ':')"
+		bad_msg "Examples:"
+		bad_msg "\tip=10.0.0.22::10.0.0.1:255.0.0.0:localhost:eth0"
+		bad_msg "\tip=10.0.0.22::10.0.0.1:::eth0"
+		bad_msg "\tip=10.0.0.22::10.0.0.1"
+		bad_msg "\tip=:::::eth1:bootp"
+		bad_msg "\tip=:::::eth5:dhcp"
+		bad_msg "\tip=dhcp  is a shortcut to use dhcp on eth0"
+		bad_msg 
+		bad_msg "You may add 'nameserver=w.x.y.z' to setup domain name resolution."
+		bad_msg "Example: ip=10.0.0.22:10.0.0.1 nameserver=10.0.0.2"
+		bad_msg 
+		bad_msg "Please provide a valid ip parameter or 'continue' to boot without"
+		bad_msg "setting up networking ..."
+		echo -n "ip="
+
+		### TODO : have a proper read -t, if user does not provide info in, say, 10secs, 
+		### break out of the while loop.
+		read ip
+
+		# Get the nameserver param if there is one
+		if echo "${ip}" | grep 'nameserver=' > /dev/null
+		then
+			NAMESERVER=$( echo "${ip}" | cut -f2 -d' ' | cut -f2 -d'=' )
+		fi
+
+		# Make sure there is no garbage 
+		IP=$( echo "${ip}" | cut -f1 -d' ' )
+	else
+		got_good_net="yes"
+	fi
+done
+
+
+[ "${FORCED_UNIONFS}" = "yes" ] && setup_unionfs
+[ -n "$DEBUG" ] && shell
+
+if [ -n "${REAL_ROOT_DETECT}" ]
+then
+	REAL_ROOT_DETECT="$(echo ${REAL_ROOT_DETECT} | sed -e 's/:/ /g')"
+
+	dbg_msg "Running ${FSLOADERS}/${REAL_ROOT_DETECT}..."
+	REAL_ROOT="$(${FSLOADERS}/${REAL_ROOT_DETECT})"
+fi
+
+got_good_root=no
+while [ "${got_good_root}" != "yes" ]
+do
+
+	if [ "${REAL_ROOT}" = '' ]
+	then
+		echo
+		bad_msg "Please specify a valid real_root parameter to boot, 'help' or 'shell' ..."
+		if [ "${USE_UNIONFSALIKE}" = "yes" ]
+		then
+			# We already started unionizing... shall we add something else?
+			bad_msg "If some filesystems were already mounted sucessfully, add the ones you "
+			bad_msg "would like mounted over those, or type 'continue' to boot without adding"
+			bad_msg "any more filesystem to the UnionFS stack."
+		fi
+		echo -n "real_root="
+		read REAL_ROOT
+		got_good_root=no
+	fi
+
+	if [ "${REAL_ROOT}" = 'continue' ]
+	then
+		got_good_root=yes
+		continue
+	fi
+
+	if [ "${REAL_ROOT}" = 'shell' ]
+	then
+		shell
+		REAL_ROOT=''
+		got_good_root=no
+		continue
+	fi
+
+	if [ "$( echo ${REAL_ROOT} | cut -f1 -d' ' )" = 'help' ]
+	then
+		ldr="$( echo ${REAL_ROOT} | sed 's/^help *//g' )"
+		if [ -n "${ldr}" ]
+		then
+			good_msg "Help for '${ldr}':"
+			if [ -x "${FSLOADERS}/${ldr}" ]
+			then
+				${FSLOADERS}/${ldr} --help
+			else
+				warn_msg "'${ldr}' is not a valid filesystem loader"
+				warn_msg "Type 'help' for more information"
+			fi
+		else
+			good_msg "List of root filesystem loaders and their parameters:"
+			for ldr in ${FSLOADERS}/*
+			do
+				_ldr=$( basename ${ldr} )
+				echo -en "   :: ${BOLD}${_ldr}${NORMAL}:"
+				${FSLOADERS}/${_ldr} --parameters | sed 's/ /:/g'
+			done
+			good_msg "Type 'help <fsloader>' for more information (example: real_root=help livecd)"
+		fi
+		REAL_ROOT=''
+		got_good_root=no
+		continue
+	fi
+
+	### Must do this stuff inside the loop, because people can change
+	### the real_root= manually if the first given real_root crashes...
+
+	# Remove any trailing ';' (a habit of C coders...)
+	REAL_ROOT=$( echo ${REAL_ROOT} | sed 's/;$//g' )
+
+	# If unionfs is needed by a ';' stacking, enable it.
+	if echo ${REAL_ROOT} | grep ";" > /dev/null
+	then
+		setup_unionfsalike
+	fi
+
+	dbg_msg "REAL_ROOT=${REAL_ROOT}"
+	good_msg "Mounting filesystems"
+	for rootfs in $( echo "${REAL_ROOT}"  | sed 's/;/ /g' )
+	do
+		# If rootfs is starting with /, assume it is a block device
+		# for backward compatibility
+		[ "$( echo ${rootfs} | cut -c1 )" = "/" ] && rootfs="block:${rootfs}"
+
+		fs_loader="$( echo ${rootfs} | cut -f1 -d: )"
+		if [ ! -x ${FSLOADERS}/${fs_loader} ]
+		then
+			bad_msg "Unknown filesystem loader '${fs_loader}'"
+			got_good_root="no"
+			REAL_ROOT=''
+			break
+		fi
+
+
+		fs_args=""
+		# If we got arguments, clean up and replace the ':' to pass
+		# to the fs loaders
+		if echo ${rootfs} | grep ':' > /dev/null
+		then
+			fs_args="$( echo ${rootfs} | sed 's/::/:NONE:/g' | cut -f2- -d: | sed 's/:/ /g'; )"
+		fi
+
+		mountpoint=$( mkumntpoint )
+		good_msg "\t${rootfs}"
+		${FSLOADERS}/${fs_loader} --do-mount ${mountpoint} ${fs_args}
+		retval=$?
+
+		if [ "${retval}" = "0" ]
+		then
+			# Integrate all the env variables that are meant to be passed to the
+			# running system (see libgmi.sh - register_env() )
+			[ -r /etc/profile.fsloaders ] && . /etc/profile.fsloaders
+
+			got_good_root="yes"
+
+			if [ "${USE_UNIONFSALIKE}" = "yes" ]
+			then
+				dbg_msg "Recorded ${mountpoint} as a union, will insert later"
+			else
+				dbg_msg "Moving ${mountpoint} to ${ROOTFS}"
+				mount -o move ${mountpoint} ${ROOTFS}
+				dbg_res
+				break
+			fi
+		else
+			rm -rf ${mountpoint}
+			bad_msg "Mounting of '${rootfs}' failed"
+			bad_msg "Help for the '${fs_loader}' filesystem loader:"
+			${FSLOADERS}/${fs_loader} --help
+			bad_msg "Try passing the 'debug' option on the kernel command-line for more"
+			bad_msg "information before filing a bug report."
+			got_good_root=no
+			REAL_ROOT=''
+			break
+		fi
+	done
+done
+
+if [ "${USE_UNIONFS}" = "yes" ]
+then
+	got_one_broken_union="no"
+	good_msg "(unionfs) Adding unions to the root filesystem"
+	for rootfs in ${UNIONS}/*
+	do
+		dbg_msg "Inserting ${rootfs}"
+		# get the mode from the underlying fs' mode
+		mode="rw"
+		has "ro" "$( cat /proc/mounts | grep "${rootfs} " |  cut -f4 -d' ' )" && mode="ro"
+
+		good_msg "\t$( cat /proc/mounts | grep "${rootfs} " | cut -f1 -d' ' ) (${mode})"
+		/sbin/unionctl ${ROOTFS} --add --after 0 --mode ${mode} ${rootfs} 2> /dev/null
+		if [ "$?" != "0" ]
+		then
+			warn_msg "\t\tfailed, but continuing"
+			got_one_broken_union="yes"
+		fi
+	done
+
+	if [ "${got_one_broken_union}" = "yes" ]
+	then
+		warn_msg "One of the unions was not added successfully."
+		warn_msg "GMI will try to continue, but you may experience problems."
+		warn_msg ""
+		warn_msg "Try passing the 'debug' option on the kernel command-line for more"
+		warn_msg "information before filing a bug report."
+		warn_msg ""
+		warn_msg "(Waiting 10 seconds...  CTRL-ALT-DEL to reboot now.)"
+		sleep 10
+	fi
+
+	# Remove the unionfs base
+	unionctl ${ROOTFS} --remove ${UNIONS}/.base
+	umount ${UNIONS}/.base
+elif [ "${USE_AUFS}" = "yes" ]
+then
+	# If a script has mounted something onto /rootfs already then skip this step...
+	cat /proc/mounts | cut -f2 -d' ' | grep '/rootfs' -q
+
+	if [ $? -ne 0 ]
+	then
+		good_msg "(aufs) Adding unions to the root filesystem"
+		got_one_broken_union=""
+		mountopt=""
+
+		for rootfs in ${UNIONS}/*
+		do
+			dbg_msg "Inserting ${rootfs}"
+			# get the mode from the underlying fs' mode
+			mode="rw"
+			has "ro" "$( cat /proc/mounts | grep "${rootfs} " |  cut -f4 -d' ' )" && mode="ro"
+
+			good_msg "\t$( cat /proc/mounts | grep "${rootfs} " | cut -f1 -d' ' ) (${mode})"
+			mount -t aufs -o "${mountopt},prepend:${rootfs}=${mode}" none ${ROOTFS}
+			if [ "$?" != "0" ]
+			then
+				warn_msg "\t\tfailed, but continuing"
+				got_one_broken_union="yes"
+			fi
+
+			mountopt="remount,"
+		done
+
+		if [ "${got_one_broken_union}" = "yes" ]
+		then
+			warn_msg "One of the unions was not added successfully."
+			warn_msg "GMI will try to continue, but you may experience problems."
+			warn_msg ""
+			warn_msg "Try passing the 'debug' option on the kernel command-line for more"
+			warn_msg "information before filing a bug report."
+			warn_msg ""
+			warn_msg "(Waiting 10 seconds...  CTRL-ALT-DEL to reboot now.)"
+			sleep 10
+		fi
+	fi
+fi
+
+# If there are any mounts _under_ GMIMNT, we try to move these into 
+# the future rootfs so they can be referenced and umounted easily
+if cat /proc/mounts | grep "${GMIMNT}/" > /dev/null
+then
+	mkdir ${ROOTFS}/.gmi 2> /dev/null
+	if [ -d "${ROOTFS}/.gmi" ]
+	then
+		mount -o move ${GMIMNT} ${ROOTFS}/.gmi
+	else
+		warn_msg "Could not move the mountpoints inside the root filesystem."
+		warn_msg "GMI will try to continue, but you may experience problems."
+		warn_msg ""
+		warn_msg "Make sure your real_root parameter yields a read-write root filesystem"
+		warn_msg "or that the '/.gmi' directory exists."
+		warn_msg ""
+		warn_msg "(Waiting 10 seconds...  CTRL-ALT-DEL to reboot now.)"
+		sleep 10
+	fi
+else
+	# No need to keep it mounted because it contains no mounts
+	umount ${GMIMNT}
+fi
+
+# The rootfs is now final, so let's unpack stuff if it is needed
+if [ -n "${UNPACK}" ]
+then
+	# Remove any trailing ';' (a habit of C coders...)
+	UNPACK=$( echo ${UNPACK} | sed 's/;$//g' )
+
+	good_msg "Unpacking"
+	for pkg in $( echo ${UNPACK} | sed 's/;/ /g' )
+	do
+		if [ -d ${ROOTFS}${pkg} ]
+		then
+			good_msg "\t${pkg}"
+			for pkgfile in ${ROOTFS}${pkg}/*
+			do
+				good_msg "\t\t$( basename ${pkgfile} )"
+				unpack ${pkgfile} ${ROOTFS}
+				[ "$?" != "0" ] && warn_msg "\t\t\tfailed, but continuing"
+			done
+		else
+			good_msg "\t${pkg}"
+			unpack ${ROOTFS}${pkg} ${ROOTFS}
+			[ "$?" != "0" ] && warn_msg "\t\tfailed, but continuing"
+		fi
+	done
+fi
+
+
+### TODO: splash stuff...
+# Required for gensplash to work.  Not an issue with the initrd as this device isnt created there and is not needed.
+[ -n "$DEBUG" ] && shell
+if [ -e /dev/tty1 -a ! -e ${ROOTFS}/dev/tty1 ]
+then
+	mv /dev/tty1 ${ROOTFS}/dev
+fi
+
+# Clean up env
+unset DEBUG
+unset USE_UNIONFS
+verbose_kmsg 
+
+# Make sure we are in the root before the switch_root command is called
+cd /
+good_msg "Transferring control to ${INIT} ..."
+umount /sys
+umount /proc
+if [ -n "${CONSOLE}" ]
+then 
+	exec switch_root -c "${CONSOLE}" "${ROOTFS}" "${INIT}" "${INIT_ARGS}"
+else
+	[ ! -e ${ROOTFS}/dev/console ] && mknod ${ROOTFS}/dev/console c 5 1
+	exec switch_root "${ROOTFS}" "${INIT}" "${INIT_ARGS}"
+fi
+
+### TODO: splash stuff...
+splash 'verbose'
+
+echo 'A fatal error has probably occured since /sbin/init did not'
+echo 'boot correctly. Trying to open a shell...'
+echo
+exec ash

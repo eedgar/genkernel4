@@ -1,0 +1,15 @@
+diff -urN open-iscsi-1.0-485.orig/kernel/Makefile open-iscsi-1.0-485/kernel/Makefile
+--- open-iscsi-1.0-485.orig/kernel/Makefile	2006-02-15 13:24:54.090449712 -0600
++++ open-iscsi-1.0-485/kernel/Makefile	2006-02-15 13:25:37.641828896 -0600
+@@ -23,9 +23,10 @@
+ # eg to compile for a kernel that you aren't currently running
+ KERNELRELEASE ?= $(shell uname -r)
+ KSRC ?= /lib/modules/$(KERNELRELEASE)/build
++KBUILD_OUTPUT ?= 
+ 
+ # this is the basic Kbuild invocation, just append your make target
+-KBUILD_BASE = +$(MAKE) -C $(KSRC) M=`pwd` $(KARCH) V=$(V)
++KBUILD_BASE = +$(MAKE) -C $(KSRC) M=`pwd` KBUILD_OUTPUT=$(KBUILD_OUTPUT) $(KARCH) V=$(V)
+ 
+ # fun stuff for maintaining multiple versions
+ KSUBLEVEL = $(shell cat $(KSRC)/Makefile | awk -F= '/^SUBLEVEL =/ {print $$2}' | \

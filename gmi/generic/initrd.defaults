@@ -1,0 +1,35 @@
+# Distributed under the terms of the GNU General Public License v2, see "init"
+# for copyright details and authors.
+#
+# Sourced parameters, used in GMI scripts.
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+# Insert ctrl character
+# ctrl-V then esc will print ^[
+# ctrl-V then ctrl-shift-m will print ^M
+BACK_UP="\033[1K\033[0G"
+NORMAL="\033[0m"
+WARN="\033[33;1m"
+BAD="\033[31;1m"
+BOLD="\033[1m"
+GOOD="\033[32;1m"
+
+# Libraries and paths
+LIBGMI="/usr/lib/genkernel"
+FSLOADERS="${LIBGMI}/fsloaders"
+
+# The future root fs
+ROOTFS="/rootfs"
+# gmi mountpoint base
+GMIMNT="/mnt/gmi"
+# Dirs that get unionized into the new root fs
+UNIONS="${GMIMNT}/unions"
+# Dirs needed for some multi-mount fsloaders
+# but are not unionized in the new root fs
+MNTOTHER="${GMIMNT}/other"
+
+INIT="/sbin/init"
+
+# Silence kernel
+QUIET=1

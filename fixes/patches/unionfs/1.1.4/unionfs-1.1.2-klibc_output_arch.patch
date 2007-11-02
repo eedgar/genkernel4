@@ -1,0 +1,111 @@
+diff -urN unionfs-1.1.2.orig/Makefile unionfs-1.1.2/Makefile
+--- unionfs-1.1.2.orig/Makefile	2006-01-25 15:58:11.000000000 -0600
++++ unionfs-1.1.2/Makefile	2006-02-08 09:13:42.000331112 -0600
+@@ -3,8 +3,8 @@
+ # this should point to where your kernel headers are
+ KVERS=$(shell uname -r)
+ MODDIR= /lib/modules/$(KVERS)
+-LINUXSRC = /lib/modules/$(KVERS)/build
+-TOPINC   = -I${LINUXSRC}/include
++#KERNELDIR = /lib/modules/$(KVERS)/build
++KERNELDIR = /usr/src/linux
+ # This is where the make install target will put stuff
+ PREFIX   = /usr/local
+ MANDIR   = ${PREFIX}/man
+@@ -15,6 +15,9 @@
+ UNIONFS_DEBUG_CFLAG = -g
+ UNIONFS_OPT_CFLAG= -O2
+ UNIONFS_VERSION_CFLAG=-DUNIONFS_VERSION=\"${VERSION}\"
++ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++                  -e s/arm.*/arm/ -e s/sa110/arm/ \
++                  -e s/s390x/s390/ -e s/parisc64/parisc/ )
+ 
+ # allow custmom override of TOPINC for fistgen developers
+ # These options enable extended attribute support
+@@ -28,8 +31,9 @@
+ endif
+ 
+ CC	= gcc
+-KERNELVERSION=$(shell echo $(KVERS) | cut -d. -f1,2)
+-EXTRA_CFLAGS += ${TOPINC} -Wall -Werror ${EXTRACFLAGS} ${UNIONFS_DEBUG_CFLAG} ${UNIONFS_OPT_CFLAG} ${UNIONFS_VERSION_CFLAG}
++
++EXTRA_CFLAGS += -Wall -Werror ${EXTRACFLAGS} ${UNIONFS_DEBUG_CFLAG} ${UNIONFS_OPT_CFLAG} ${UNIONFS_VERSION_CFLAG}
++
+ UCFLAGS = -I. ${UNIONFS_DEBUG_CFLAG} ${UNIONFS_OPT_CFLAG} -Wall -Werror ${EXTRAUCFLAGS}  ${UNIONFS_VERSION_CFLAG}
+ 
+ obj-m := unionfs.o
+@@ -49,21 +53,25 @@
+ 	@echo ""
+ 
+ unionfs.ko: FRC
+-	make -C ${LINUXSRC} SUBDIRS=$(PWD) FISTDEVMK=$(PWD)/fistdev.mk modules
++ifneq ($(KBUILD_OUTPUT),)
++	make -C ${KERNELDIR} CROSS_COMPILE=${KERNEL_CROSS_COMPILE} KBUILD_OUTPUT=${KBUILD_OUTPUT} M=`pwd` ARCH=${ARCH} modules
++else
++	make -C ${KERNELDIR} SUBDIRS=$(PWD) CROSS_COMPILE=${KERNEL_CROSS_COMPILE} ARCH=${ARCH} modules
++endif
+ 
+ FRC:
+ 
+ ${obj-m}: ${unionfs-objs}
+-	${LD} -o ${obj-m} -r ${unionfs-objs}
++	${UTILS_CROSS_COMPILE}${LD} -o ${obj-m} -r ${unionfs-objs}
+ 
+ unionctl: unionctl.c usercommon.c
+-	${CC} -o $@ $^ ${UCFLAGS}
++	${UTILS_CROSS_COMPILE}${CC} -o $@ $^ ${UCFLAGS}
+ 
+ uniondbg: uniondbg.c
+-	${CC} -o $@ $^ ${UCFLAGS}
++	${UTILS_CROSS_COMPILE}${CC} -o $@ $^ ${UCFLAGS}
+ 
+ unionimap: unionimap.c usercommon.c
+-	${CC} -o $@ $^ -luuid ${UCFLAGS}
++	${UTILS_CROSS_COMPILE}${CC} -o $@ $^ -luuid ${UCFLAGS}
+ 
+ memtest:
+ 	perl match-malloc.pl log.txt
+@@ -74,12 +82,19 @@
+ tags: $(wildcard *.[ch])
+ 	ctags $^
+ 
+-clean:
+-	-make -C ${LINUXSRC} SUBDIRS=$(PWD) FISTDEVMK=$(PWD)/fistdev.mk clean
++modules-clean:
++ifneq ($(KBUILD_OUTPUT),)
++	make -C ${KERNELDIR} KBUILD_OUTPUT=${KBUILD_OUTPUT} M=`pwd` ARCH=${ARCH} clean
++else
++	make -C ${KERNELDIR} SUBDIRS=$(PWD) CROSS_COMPILE=${CROSS_COMPILE} ARCH=${ARCH} clean
++endif
++
++utils-clean:
+ 	rm -f ${unionfs-objs} ${obj-m} ${obj-m:.o=.ko} *.d .*.flags \#* *~
+ 	rm -f ${BINS} TAGS tags
+ 	rm -f unionfs-${VERSION}.tar${COMPEXT}
+ 
++clean: modules-clean utils-clean
+ sparse:
+ 	sparse $(patsubst, %.o, %.c, $(unionfs-objs)) ${EXTRA_CFLAGS} -D__KERNEL__
+ 
+@@ -99,14 +114,17 @@
+ 	cp man/uniondbg.8 ${MANDIR}/man8
+ 
+ install-mod: unionfs.ko
+-	mkdir -p ${MODPREFIX}/${MODDIR}/kernel/fs/unionfs
+-	cp unionfs.ko ${MODPREFIX}/${MODDIR}/kernel/fs/unionfs
+-	-/sbin/depmod -a
++ifneq ($(KBUILD_OUTPUT),)
++		make -C ${KERNELDIR} CROSS_COMPILE=${CROSS_COMPILE} KBUILD_OUTPUT=${KBUILD_OUTPUT} M=`pwd` ARCH=${ARCH} \
++			INSTALL_MOD_PATH=${INSTALL_MOD_PATH} modules_install
++else
++		make -C ${KERNELDIR} SUBDIRS=$(PWD) CROSS_COMPILE=${CROSS_COMPILE} ARCH=${ARCH} modules_install
++endif
+ 
+ install: install-utils install-mod
+ 
+ uninstall:
+-	rm ${MODPREFIX}/${MODDIR}/kernel/fs/unionfs.ko
++	# Remove the module from the extras folder?
+ 	-/sbin/depmod -a
+ 	rm ${MANDIR}/man8/unionctl.8
+ 	rm ${MANDIR}/man8/uniondbg.8

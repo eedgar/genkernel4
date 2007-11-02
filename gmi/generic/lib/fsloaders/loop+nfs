@@ -1,0 +1,117 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# Loop file over NFS fs loader for genkernel
+#
+# ./loop+nfs --do-mount mountpoint ip path
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+        echo 'ip path'
+}
+
+
+help() {
+cat << EOHELP
+usage: loop+nfs:<ip>:<path>
+example: 'root=loop+nfs:10.0.0.1:/mnt/modules'
+         'root=loop+nfs:10.0.0.9:/mnt/images/image.squashfs'
+parameters are
+<ip>           IP address of the NFS server
+<path>         directory containing images OR a single image's full path
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local server_ip="${2}"
+	local path="${3}"
+	local nfsmnt
+	local umnt
+	local lfile
+	local retval
+
+	nfsmnt=$( mkmntpoint )
+
+	# try 1 : path is a dir, we mount it and loop mount every file in it
+	# in the $UNIONS directory, so they get unionized into the rootfs by init
+	# later on
+
+	${FSLOADERS}/nfs --do-mount ${nfsmnt} ${server_ip} ${path} ro,nolock
+
+	if [ "$?" = "0" ]
+	then
+		dbg_msg "Mounting loop files"
+		cd ${nfsmnt}
+
+		umnt=${mountpoint}
+		got_good_root="no"
+		for lfile in *
+		do
+			good_msg "\t\t${lfile}"
+			${FSLOADERS}/loop --do-mount ${umnt} ${lfile}
+
+			if [ "$?" = "0" ]
+			then
+				if [ "${USE_UNIONFS}" != "yes" ]
+				then
+					# get out as soon as we have one loop mounted
+					return 0
+				fi
+
+				got_good_root="yes"
+
+				# room for another, please
+				umnt=$( mkumntpoint )
+			fi
+		done
+		# remove the last unused union mountpoint
+		rm -rf ${umnt}
+
+		[ "${got_good_root}" = "no" ] && return 1
+	else
+		# try 2 : path is a file, mount the dirname, then loop mount only this file
+
+		${FSLOADERS}/nfs --do-mount ${nfsmnt} ${server_ip} $( dirname ${path} ) ro,nolock
+
+		if [ "${?}" = "0" ]
+		then
+			cd ${nfsmnt}
+			${FSLOADERS}/loop --do-mount ${mountpoint} $( basename ${path} )
+			return $?
+		else
+			dbg_msg "Was neither a file or directory, bailing out"
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

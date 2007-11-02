@@ -1,0 +1,77 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# LVM2 device root fs loader for genkernel
+#
+# ./lvm2 --do-mount mountpoint lvmdevice mount_opts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+        echo 'device mount_opts'
+}
+
+
+help() {
+cat << EOHELP
+usage: lvm2:<device>[:mount_opts]
+example: 'root=lvm2:/dev/vg/root'
+         'root=lvm2:/dev/volgroup/vol1:ro,noatime'
+parameters are
+<device>       device containing the filesystem
+[mount_opts]   parameters to pass at mounting of the filesystem
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local lvmdevice="${2}"
+	local mount_opts="${3}"
+	local dev
+	local _mount_opts
+
+	is_set ${mount_opts} && _mount_opts="-o ${mount_opts}"
+
+	if [ -e /sbin/lvm.static ]
+	then
+		dbg_msg "Scanning for Volume Groups"
+		/sbin/lvm.static vgscan --ignorelockingfailure --mknodes 2>/dev/null
+		dbg_msg "Activating Volume Groups"
+		/sbin/lvm.static vgchange -ay --ignorelockingfailure 2>/dev/null
+
+		dbg_msg "mount ${_mount_opts} ${lvmdevice} ${mountpoint}"
+		mount ${_mount_opts} ${lvmdevice} ${mountpoint}
+		assert "$?" "Could not mount the LVM device '${lvmdevice}'" || return 1
+
+	else
+		bad_msg "/sbin/lvm.static not found: skipping LVM2 volume group activation!"
+		return 1
+	fi
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

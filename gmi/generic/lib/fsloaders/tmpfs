@@ -1,0 +1,64 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# tmpfs root fs loader for genkernel
+#
+# Mostly useful as a RW layer on top of some RO union branch
+#
+# ./tmpfs --do-mount mountpoint mount_opts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+        echo 'mount_opts'
+}
+
+
+help() {
+cat << EOHELP
+usage: tmpfs[:mount_opts] 
+example: 'root=tmpfs'
+         'root=tmpfs:ro'
+parameters are
+[mount_opts]   parameters to pass at mounting of the filesystem
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local mount_opts="${2}"
+	local _mount_opts
+
+	is_set ${mount_opts} && _mount_opts="-o ${mount_opts}"
+
+	dbg_msg "mount -t tmpfs ${_mount_opts} tmpfs ${mountpoint}"
+	mount -t tmpfs ${_mount_opts} tmpfs ${mountpoint}
+	assert "$?" "Could not mount tmpfs" || return 1
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

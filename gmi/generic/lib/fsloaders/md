@@ -1,0 +1,89 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# MD RAID device root fs loader for genkernel
+#
+# ./md --do-mount mountpoint device mount_opts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+        echo 'device mount_opts'
+}
+
+
+help() {
+cat << EOHELP
+usage: md:<device>[:mount_opts] 
+example: 'root=md:/dev/md0'
+         'root=md:/dev/md1:ro,noatime'
+parameters are
+<device>       device containing the filesystem
+[mount_opts]   parameters to pass at mounting of the filesystem
+EOHELP
+}
+
+
+# exported function
+setup_device() {
+	local device=${1}
+	local MD_NUMBER
+
+	MD_NUMBER=`echo ${device}|sed -e 's#/dev/md\([[:digit:]]\+\)#\1#'`
+	if [ ! -e /dev/md${MD_NUMBER} ]
+	then
+		mknod /dev/md${MD_NUMBER} b 9 ${MD_NUMBER} >/dev/null 2>&1
+		assert "$?" "Creation of '/dev/md${MD_NUMBER}' failed" || return 1
+	fi
+
+	mdstart /dev/md${MD_NUMBER}
+	assert "$?" "Starting of '/dev/md${MD_NUMBER}' failed" || return 1
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local device="${2}"
+	local mount_opts="${3}"
+	local dmraid_opts="${4}"
+	local _mount_opts
+
+	is_set ${mount_opts} && _mount_opts="-o ${mount_opts}"
+
+	setup_device "${device}"
+
+	dbg_msg "mount ${_mount_opts} ${device} ${mountpoint}"
+	mount ${_mount_opts} ${device} ${mountpoint}
+	assert "Could not mount MD device '${device}'" || return 1
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	"--setup-device")
+		shift
+		setup_device $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

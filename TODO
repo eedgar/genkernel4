@@ -1,0 +1,38 @@
+Things to fix:
+
+* CACHE_DIR should be created automatically if it does not exist
+
+* cmdline kernel config parameter changing
+
+* make some functions more generic .. ( not necessary right away but would be nice to get done )
+
+* make critical variables (arch, etc) bombproof and readonly so modules can't b0rk things
+  up
+
+* --list-module-groups for gmi
+
+gmi: We need modules in the sense that you can just add an overlay and the
+     initramfs scripts will pick up the .sh and run it.
+
+busybox: fix config (add --busybox-networking opt or something)
+
+general: "Failed to compile" errors need to produce backtrace & etc...
+
+kernel modules --no doesnt work
+
+* reduce --help indentation to make things more readable
+* --help should go to stderr
+* udhcp.sh should print out IP address received and such
+* console=ttyS0,9600 goes kaboom
+
+when you don't have a kernel driver and you ip=dhcp <-- it should say no
+such device or so.
+
+the print_info command is going to need some work too
+ I think when it dumps stuff to the debugfile
+ it should automatically strip color codes
+
+# Single cpio option must be run as root .. die if not root.
+    -> mknod fails as a regular user. :/
+    look into gen_init_cpio or cpio --append to see if we cant work around
+    the dev node issues.

@@ -1,0 +1,83 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# DMRAID device root fs loader for genkernel
+#
+# ./dmraid --do-mount mountpoint device mount_opts dmraidopts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+## TODO : UNTESTED, the help is incomplete (/me doesn't know about dmraid)
+
+
+parameters() {
+        echo 'device mount_opts dmraidopts'
+}
+
+
+help() {
+cat << EOHELP
+usage: dmraid:<device>[:mount_opts[:dmraidopts]]
+example: 'root=dmraid:/dev/TODO'
+         'root=dmraid:/dev/TODO:ro,noatime:TODO'
+         'root=dmraid:/dev/TODO::TODO'
+parameters are
+<device>       device containing the filesystem
+[mount_opts]   parameters to pass at mounting of the filesystem
+[dmraid_opts]  options to use at starting of the DMRAID devices
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local device="${2}"
+	local mount_opts="${3}"
+	local dmraid_opts="${4}"
+	local _mount_opts
+
+	is_set ${mount_opts} && _mount_opts="-o ${mount_opts}"
+
+	if [ -e '/sbin/dmraid' ]
+	then
+		dbg_msg "Activating Device-Mapper RAID(s)"
+		if is_set "${dmraid_opts}"
+		then
+			/sbin/dmraid -ay
+		else
+			/sbin/dmraid -ay ${dmraid_opts}
+		fi
+
+		dbg_msg "mount ${_mount_opts} ${device} ${mountpoint}"
+		mount ${_mount_opts} ${device} ${mountpoint}
+		assert "$?" "Could not mount DMRAID device '${device}'" || return 1
+	else
+		bad_msg "/sbin/dmraid not found: skipping DMRAID volume group activation!"
+		return 1
+	fi
+}
+
+
+case "${1}" in
+	"--help")
+		help
+		;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

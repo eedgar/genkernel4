@@ -1,0 +1,76 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# Loop root fs loader for genkernel
+#
+# ./loop --do-mount mountpoint loopfilepath
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+### TODO : add some more loop types
+
+
+parameters() {
+        echo 'loopfilepath'
+}
+
+
+help() {
+cat << EOHELP
+usage: loop:<loopfilepath>
+example: 'root=loop:/some/place.squashfs'
+parameters are
+<loopfilepath> full path of a loop file
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local loopfile="${2}"
+	local looptype="$( basename ${loopfile} | sed 's/^.*\.//' )"
+
+	case "${looptype}" in
+		# .mo is the extension in SLAX for unionizable squashfs modules
+		"squashfs" | "mo")
+			dbg_msg "Mounting SquashFS file"
+			mount -t squashfs -o loop,ro ${loopfile} ${mountpoint}
+			assert "$?" "Could not mount SquashFS file '$( basename ${loopfile} )'" || return 1
+			;;
+		"iso")
+			dbg_msg "Mounting ISO file"
+			mount -t iso9660 -o loop,ro ${loopfile} ${mountpoint}
+			assert "$?" "Could not mount ISO file '$( basename ${loopfile} )'" || return 1
+			;;
+		*)
+			dbg_msg "Mounting auto loopback"
+			mount -t auto -o loop,ro ${loopfile} ${mountpoint} 2> /dev/null  ### this one may well fail...
+			assert "$?" "Could not mount auto loop file '$( basename ${loopfile} )'" || return 1
+			;;
+	esac
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

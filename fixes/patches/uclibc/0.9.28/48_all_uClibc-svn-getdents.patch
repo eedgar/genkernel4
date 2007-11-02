@@ -1,0 +1,81 @@
+backport from current uClibc to fix setting of d_type in the DIR structure
+
+this patch breaks on 64bit hosts, but uClibc-0.9.28 has broken 64bit handling
+anyways, so oh well
+
+--- uClibc/libc/sysdeps/linux/common/getdents.c
++++ uClibc/libc/sysdeps/linux/common/getdents.c
+@@ -30,7 +30,9 @@
+ #include <sys/syscall.h>
+ 
+ 
++#ifndef offsetof
+ #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
++#endif
+ 
+ struct kernel_dirent
+ {
+@@ -40,6 +42,8 @@
+     char		d_name[256];
+ };
+ 
++#if ! defined __UCLIBC_HAS_LFS__ || ! defined __NR_getdents64
++
+ #define __NR___syscall_getdents __NR_getdents
+ static inline _syscall3(int, __syscall_getdents, int, fd, unsigned char *, kdirp, size_t, count);
+ 
+@@ -98,3 +102,33 @@
+     }
+     return (char *) dp - buf;
+ }
++
++#else
++
++extern ssize_t __getdents64 (int fd, char *buf, size_t nbytes);
++ssize_t __getdents (int fd, char *buf, size_t nbytes)
++{
++    struct dirent *dp;
++    struct dirent64 *dp64;
++    ssize_t ret = __getdents64 (fd, buf, nbytes);
++
++    if (ret <= 0)
++	return ret;
++
++    dp64 = (struct dirent64 *) buf;
++    buf += ret;
++    while ((void *) dp64 < (void *) buf) {
++	dp = (struct dirent *) dp64;
++	dp->d_ino = dp64->d_ino;
++	dp->d_off = dp64->d_off;
++	dp->d_reclen = dp64->d_reclen;
++	dp->d_type = dp64->d_type;
++	memmove (dp->d_name, dp64->d_name, dp->d_reclen - offsetof (struct dirent64, d_name));
++	memmove (dp64, dp, dp->d_reclen);
++	dp64 = ((void *) dp64) + dp->d_reclen;
++    }
++
++    return ret;
++}
++
++#endif
+--- uClibc/libc/sysdeps/linux/common/getdents64.c
++++ uClibc/libc/sysdeps/linux/common/getdents64.c
+@@ -33,7 +33,9 @@
+ #if defined __UCLIBC_HAS_LFS__ && defined __NR_getdents64 
+ 
+ 
++#ifndef offsetof
+ #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
++#endif
+ 
+ struct kernel_dirent64 
+ {
+@@ -95,7 +97,7 @@
+ 	dp->d_ino = kdp->d_ino;
+ 	dp->d_off = kdp->d_off;
+ 	dp->d_reclen = new_reclen;
+-	dp->d_type = DT_UNKNOWN;
++	dp->d_type = kdp->d_type;
+ 	memcpy (dp->d_name, kdp->d_name,
+ 		kdp->d_reclen - offsetof (struct kernel_dirent64, d_name));
+ 	dp = (struct dirent64 *) ((char *) dp + new_reclen);

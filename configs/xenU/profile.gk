@@ -1,0 +1,2 @@
+kernel-make-directive := ""
+kernel-binary := "vmlinuz"

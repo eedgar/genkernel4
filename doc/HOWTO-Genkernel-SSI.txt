@@ -1,0 +1,278 @@
+HOWTO Simple NFS Single System Image with Genkernel 4
+=====================================================
+v0.1, Jean-Francois Richard <jean-francois@richard.name>
+
+/////////////////////////////////////////////
+Very drafty, my english needs some review...
+/////////////////////////////////////////////
+
+Single System Image (SSI) setups are, put simply, the sharing of a
+single root (`/`) filesystem by multiple systems.
+
+This kind of system has the advantage of being very easily
+maintainable, since you must only have one set of packages to install,
+on only one server, to have it available on each and every SSI node
+connected, instantly.
+
+The setup of such a system requires:
+
+- NFS Server
+- DHCP Server
+- PXE+TFTP booting
+- Genkernel's initramfs
+- A 'diff-overlay' filesystem
+
+The big picture is that we need to setup network booting, using DHCP,
+TFTP and PXE, and NFS mounting of the server's `/`, overlayed by an
+UnionFS-added directory that will contain local differences in the
+filesystem, and preserve state throughout reboots of the nodes.
+
+We will explain how to set up all of those in the following sections.
+
+
+NFS Server
+----------
+
+Simply emerge 'nfs-utils' on the server and make sure that you have
+NFS server support in the server's kernel.
+
+You then have to have such a `/etc/exports` file :
+
+-----------------------------------------------------------------
+# /etc/exports: NFS file systems being exported.  See exports(5).
+
+# The server's root 
+/  node01(ro,sync,no_root_squash)
+
+# The diff-overlay
+/var/state/systems/node01  node01(rw,sync,no_root_squash)
+-----------------------------------------------------------------
+
+Here, we tell the server to export the whole `/` to SSI nodes (here
+only `node01`).  Also, we have a special directory (the
+'diff-overlay'), `/var/state/systems/node01` that will contain all
+node-specific files, so that the configuration of nodes can be
+slightly different than the one from the server (think of `/etc/fstab`
+for example).  We will explain how to set up those differences in a
+following section.
+
+
+The 'diff-overlay' directory
+----------------------------
+
+Since each system, even though they all boot from the same root, needs
+some particular configuration directives and temporary storage, we use
+UnionFS to build a two-layers filesystem on the SSI nodes that solves
+these issues.
+
+The bottom-most system is the exact root filesystem we find on the
+server.  It needs to be exported read-only (and thus mounted read-only
+by the SSI nodes) to prevent any harmful modifications to it.
+
+The top-most filesystem is what we call the 'diff-overlay'.  It is
+essentially a read-write NFS system mounted from the server (we
+suggest to mount the server's `/var/state/system/nodeX` directory).
+This directory, on the server, will mostly be empty, except for files
+that need to 'override' the ones that would be found on the server's
+root.
+
+For example, the `/etc/fstab` file will be present on the bottom-most
+layer (e.g. the server's root), but we want the node to see a custom
+file content instead, since it will not mount the same filesystems.
+Using UnionFS, the top-most layer, if it contains the same file, will
+take priority.  The applications on the node will only see that
+top-most one.
+
+So how to we mask the bottom-most layer?  Simply by creating a
+`/etc/fstab` file in the 'diff-overlay' (which will be, in our
+nomenclature, `/var/state/systems/node01/etc/fstab`).
+
+This scheme is the same for every file that needs to be different than
+the server's one on a given node.
+
+DHCP Server, TFTP and PXE setup
+-------------------------------
+
+We suggest you follow the instructions in the excellent
+http://www.gentoo.org/doc/en/diskless-howto.xml[Diskless Nodes with
+Gentoo] guide.
+
+Chapters 3 and 4 cover this topic.  The only little thing that can be
+done (optionally) differently is to have the TFTP root path be
+`/boot`, so that all boot-related files are in the same well-known
+location.
+
+
+Kernel
+------
+
+The nodes' kernel does not need any specific configuration, but to be
+able to mount an NFS share.  You must enable 'NFS client' options.
+
+You may use Genkernel to build the kernel, it may simplify things for
+you.
+
+---------------------------------
+# genkernel --menuconfig kernel::
+---------------------------------
+
+
+Genkernel's initramfs
+---------------------
+
+To support the union of the two NFS directories, you must build an
+initramfs with genkernel, using the following options :
+
+---------------------------------------------
+# genkernel --unionfs [otheropts] initramfs::
+---------------------------------------------
+
+We suggest building an initramfs with DNS support built-in so you can
+resolve the hostnames of the NFS servers.  If you don't, you can
+simply use direct IP addresses.  To have DNS support, you will need to
+include uClibc in the initramfs (which takes longer to compile and
+gives a bigger initramfs).  Use the following genkernel options:
+
+---------------------------------------------------------------
+# genkernel --unionfs --internal-uclibc [otheropts] initramfs::
+---------------------------------------------------------------
+
+Now that the initramfs is built, you need to tell PXELINUX to load it,
+and to pass a `root=` directive that will union-mount the server's `/`
+and the 'diff-overlay'.  For example, you may have such a
+`pxelinux.cfg/default` file (refer to
+http://www.gentoo.org/doc/en/diskless-howto.xml[Diskless Nodes with
+Gentoo] guide).
+
+-------------------------------------------------------------------------------
+default node
+prompt 0
+label node
+        kernel /kernel
+        append initrd=/initramfs ip=dhcp \
+               root=nfs:10.0.0.1:/:ro;nfs:10.0.0.1:/var/state/systems/node01:rw
+-------------------------------------------------------------------------------
+
+As you may have noticed, we tell the initramfs to mount two NFS shares
+(separated by the "`;`").  This will trigger UnionFS support, which
+will have the first share as the bottom-most filesystem and the right
+one as the top-most.
+
+
+Using runlevels to customize node behavior
+------------------------------------------
+
+To build 'specialized nodes', you may be interested in understanding
+the Gentoo Init Scripts, which are described in the
+http://www.gentoo.org/doc/en/handbook/[Gentoo Handbook].
+
+For example, one may well create a `computenode` runlevel, in which
+some of the SSI nodes will boot, using such parameters in
+`pxelinux.cfg/default` :
+
+-------------------------------------------------------------------------------
+default node
+prompt 0
+label node
+        kernel /kernel
+        append initrd=/initramfs ip=dhcp softlevel=computenode \
+               root=nfs:10.0.0.1:/:ro;nfs:10.0.0.1:/var/state/systems/node01;rw
+-------------------------------------------------------------------------------
+
+To have different systems booting in different runlevels, you will
+need to have different PXELINUX configuration files for each of these.
+Refer again to the
+http://www.gentoo.org/doc/en/diskless-howto.xml[Diskless Nodes with
+Gentoo] guide for more information on how to use a specific
+configuration file for a given client IP or hardware (MAC) address.
+
+You can also tell the node which PXELINUX configuration file to
+request by using the `option pxelinux.configfile "myconf"` option in
+the DHCP setup.  See the http://syslinux.zytor.com/pxe.php[PXELINUX
+homepage] for more information.
+
+Notes, ideas
+------------
+
+Single kernel and initramfs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may well use the same kernel and initramfs for both booting the
+server and the nodes.  The only things that needs to be different are
+the boot parameters.  Given that, you can simply issue the following
+command to build the kernel and initramfs in a single step:
+
+----------------------------------------------------------------------
+# genkernel --unionfs --internal-uclibc --menuconfig [otheropts] all::
+----------------------------------------------------------------------
+
+This will build everything needed.  Make sure that you have NFS server
+and NFS client support in the kernel.
+
+
+More than two overlays and non-invasive testing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may also use more than one NFS overlay, or even mix and match the
+NFS root with other types of overlays, such as a read-write tmpfs, to
+test software without modifying the original state of the nodes.
+
+For example, you could well have such a line in `pxelinux.cfg/default`
+to boot the nodes:
+
+-------------------------------------------------------------------------------------
+append initrd=/initramfs ip=dhcp softlevel=computenode \
+               root=nfs:10.0.0.1:/:ro;nfs:10.0.0.1:/var/state/systems/node01:ro;tmpfs
+-------------------------------------------------------------------------------------
+
+It will boot the system just as it would normally do, but all changes
+to the root filesystem will be stored in memory and thrown away at
+next reboot.
+
+
+Multiple architectures
+~~~~~~~~~~~~~~~~~~~~~~
+
+The setup described here supposes that you have a homogeneous group of
+systems that share the same architecture (or that you build the server
+system with the 'lowest common architecture flags' of all your
+systems).
+
+If you need to optimize or use another architecture for some of the
+diskless nodes, you can still use a similar setup, but you will need
+to:
+
+- Build a complete system in a subdirectory on the server, such as
+  `/srv/diskless/arch` (use `chroot` or other means to achieve that);
+- Export that NFS share to the nodes;
+- Have the nodes mount it as their root filesystem.
+
+It simply means having a similar `/etc/exports` file on the server
+system:
+
+-----------------------------------------------------------------
+# /etc/exports: NFS file systems being exported.  See exports(5).
+
+# The given arch's root
+/diskless/arch  node01(ro,sync,no_root_squash)
+
+# The diff-overlay
+/var/state/systems/node01  node01(rw,sync,no_root_squash)
+-----------------------------------------------------------------
+
+and having such a PXELINUX kernel parameter line to boot the nodes:
+
+------------------------------------------------------------------------------------------------
+append initrd=/initramfs ip=dhcp softlevel=computenode \
+               root=nfs:10.0.0.1:/srv/diskless/arch:ro;nfs:10.0.0.1:/var/state/systems/node01:rw
+------------------------------------------------------------------------------------------------
+
+
+Multiple servers
+~~~~~~~~~~~~~~~~
+
+Throughout this guide, we use `10.0.0.1` as the NFS server for
+everything, but you may well export the base read-only system from one
+server and have the state stored on another.  It may have an impact on
+filesystem performance (good or bad, it is up the the user to
+benchmark the networking and filesystem performances).

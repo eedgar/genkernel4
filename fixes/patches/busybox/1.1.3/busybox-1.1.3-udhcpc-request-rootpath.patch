@@ -1,0 +1,12 @@
+diff -urN busybox-1.1.3.orig/networking/udhcp/options.c busybox-1.1.3/networking/udhcp/options.c
+--- busybox-1.1.3.orig/networking/udhcp/options.c	2006-10-04 22:13:38.000000000 -0700
++++ busybox-1.1.3/networking/udhcp/options.c	2006-10-04 22:13:55.000000000 -0700
+@@ -28,7 +28,7 @@
+ 	{"bootsize",	OPTION_U16,				0x0d},
+ 	{"domain",	OPTION_STRING | OPTION_REQ,		0x0f},
+ 	{"swapsvr",	OPTION_IP,				0x10},
+-	{"rootpath",	OPTION_STRING,				0x11},
++	{"rootpath",	OPTION_STRING | OPTION_REQ,				0x11},
+ 	{"ipttl",	OPTION_U8,				0x17},
+ 	{"mtu",		OPTION_U16,				0x1a},
+ 	{"broadcast",	OPTION_IP | OPTION_REQ,			0x1c},

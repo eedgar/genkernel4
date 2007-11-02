@@ -1,0 +1,616 @@
+GENKERNEL(8)
+============
+
+NAME
+----
+
+genkernel - the Gentoo Linux automatic kernel compiler and initramfs
+generation tool.
+
+SYNOPSIS
+--------
+
+'genkernel' [options/modules]+
+
+INTRODUCTION
+------------
+
+Genkernel is designed to allow users who are not previously used to
+compiling a kernel to use a similar setup to that one that is used on
+the Gentoo LiveCDs which auto-detects your hardware.
+
+Some users may also be interested in using genkernel for hardware
+which requires initialization and a working kernel before it can be
+booted because genkernel also automatically compiles your kernel
+modules, allowing hardware which needs to be loaded with module
+parameters to be used -- genkernel's initramfs is flexible and
+supports a variety of systems such as LVM2, EVMS, UnionFS, LUKS,
+as well as various netbooting options.
+
+Note that because genkernel 4.0 builds initramfs based images; a Linux
+kernel of 2.6 or newer is required. For initrd generation please use
+the legacy genkernel 3.3.
+
+USAGE
+-----
+
+Unlike previous versions of genkernel, genkernel 4.0 uses a modular
+architecture and functions are performed in discrete steps. The
+general syntax is:
+
+.......................................
+# genkernel --flags module1:: module2::
+.......................................
+
+
+This would run module1 and module2 as well as any dependencies with
+the specified flags. Note the "::" that is appended onto the module
+name.
+
+USEFUL MODULES
+--------------
+
+The following useful modules are listed here for convenience.
+
+`all::`:: 
+              This is a metamodule which mimics the 'all'
+              functionality of genkernel-3.3; producing a kernel,
+              initramfs (if needed) and running any extra steps such
+              as the installation and bootloader configuration of the
+              kernel.
+`kernel::`::
+              Build only the kernel and the modules.
+`initramfs::`::
+              Build only the initramfs.
+
+For other modules see the contents of the `/usr/share/genkernel/modules`
+directory.
+
+OPTIONS
+-------
+
+Genkernel supports the following options which alter its behaviour.
+Most options have "`--no-`" variants which do the opposite
+thing and can be useful for inversions if you use a genkernel
+configuration profile. You can specify your options in any order.
+
+Debugging Options
+~~~~~~~~~~~~~~~~~
+
+`--debuglevel=<0-5>`::
+              This controls the verbosity level of genkernel
+              output - if set to 0, minimal debugging is done;
+              if this is set to 5 as much output as possible is given.
+
+`--debugfile=<outfile>`::
+              This outputs full debugging data; regardless of
+              `--debuglevel` to the file `<outfile>`. By default this is
+              `/var/log/genkernel.log`.
+
+Internals
+~~~~~~~~~
+
+`--arch-override=<...>`::
+              Forces genkernel to compile for the selected
+              architecture (useful for cross-compiling).
+
+`--callback=<...>`::
+              Run the specified arguments in the current environment
+              after the kernel and modules have been compiled.
+
+`--cachedir=<...>`::
+              Override the default cache location for initramfs
+              components.
+
+`--tempdir=<...>`::
+              Override the default location for storing temporary
+              files.
+
+`--profile=<...>`::
+              Import the named profile into the configuration tree.
+
+`--profile-dump`::
+              Override the default location for storing temporary
+              files.
+
+`--[no-]usecolor`::
+              Turns on, or off, console output in color using escape
+              sequences.
+
+Cross Compiling
+~~~~~~~~~~~~~~~
+
+`--cross-compile=<...>`::
+              Specifies the cross compiler to use for both the kernel
+              and utilities.
+
+`--kernel-cross-compile=<...>`::
+              Specifies the cross compiler to use for the kernel.
+
+`--utils-cross-compile=<...>`::
+              Specifies the cross compiler to use for utilities.
+
+Kernel Configuration
+~~~~~~~~~~~~~~~~~~~~
+
+`--kernel-config=<file>`::
+              This specifies a kernel configuration file to use for
+              compilation; by default
+
+`--[no-]force-config`::
+              This options allows genkernel to forcefully edit the
+              configuration file and turn on any missing options that
+              it deems to be mandatory -- for example, if LVM support
+              is requested but not enabled then genkernel would
+              automatically turn it on in the kernel
+              configuration. This option is off by default.
+
+`--[no-]menuconfig`::
+              Runs, or does not run "`make menuconfig`" after running
+              "`make oldconfig`".
+
+`--[no-]save-config`::
+              Saves, or does not save the kernel configuration to
+              `/etc/kernels` if the kernel is successfully compiled.
+
+`--[no-]oldconfig`::
+              Run, or do not run "`make oldconfig`". The default is to
+              have the option enabled; it is also implied if the
+              --clean option is enabled.
+
+`--[no-]config`::
+              Run "`make config`" to configure the kernel.
+
+`--[no-]gconfig`::
+              Run "`make gconfig`" to configure the kernel.
+
+`--[no-]xconfig`::
+              Run "`make xconfig`" to configure the kernel.
+
+`--[no-]mrproper`::
+              Runs, or does not run, "`make mrproper`" before
+              compilation -- this erases both any compiled object files
+              in the kernel source tree as well as the kernel
+              configuration. This option is implied if Kbuild output
+              is used.
+
+`--[no-]clean`::
+              Runs, or does not run, "`make clean`" before compilation --
+              this erases any compiled object files in the kernel
+              source tree but does not have an impact on the kernel
+              configuration.
+
+`--[no-]internal-initramfs`::
+              This option creates a kernel with an embedded initramfs
+              image in the kernel image.
+
+`--kernel-tree=<dir>`::
+              This specifies the location of the kernel sources; the
+              default is `/usr/src/linux`.
+
+`--kbuild-output=<dir>`::
+              This enables Kbuild output and specifies the directory
+              to use for it.
+
+`--kernel-name=<...>`::
+              This options tags the kernel and initramfs with a name;
+              if not defined this defaults to "genkernel".
+
+`--makeopts=<makeopts>`::
+              GNU Make options such as -j2, etc. -jX is filtered
+              during the module compilation stage of 2.4 series
+              kernels to avoid bottle- necks; the 2.6 build system
+              does not have this issue and -jX is not filtered for it.
+
+initramfs:: target
+~~~~~~~~~~~~~~~~~~
+
+`--[no-]gmi`::
+              Disable genkernel's initramfs scripts allowing you to
+              use an overlay of your own.
+
+`--[no-]busybox`::
+              Enable or disable busybox in the initramfs. By default,
+              busybox is included. You don't want to use this option
+              unless you're using custom initramfs boot scripts that
+              do not require busybox.
+
+`--busybox-config=<file>`::
+              Busybox configuration file to use when compiling
+              busybox.
+
+`--[no-]busybox-menuconfig`::
+              Run busybox's menuconfig before compiling busybox.
+
+`--[no-]dmraid`::
+              Enable or disable dmraid in the initramfs.  By default,
+              this option is not included. Be sure to enable the
+              requires kenrel configuration features to use DMRAID.
+
+`--[no-]evms2`::
+              Enable or disable EVMS2 in the initramfs.  By default,
+              this option is not included. Be sure to enable the
+              required kernel configuration features to use EVMS2.
+
+`--[no-]lvm2`::
+              Enable or disable LVM2 in the initramfs. By default,
+              this option is not included. Be sure to enable the
+              required kernel configu- ration features to use LVM2.
+
+`--[no-]e2fsprogs`::
+              Enable or disable e2fsprogs in the initramfs. By
+              default, this option is not included. Enabling it
+              includes the "blkid" application in the initramfs.
+
+`--kernel-modules=<...>`::
+              This option adds or subtracts from the list of included
+              kernel modules that are merged into the initramfs. To
+              remove a module specify "-module", while to add a module
+              specify "GROUP:module" to add the module to the
+              specified module group.
+
+`--[no-]kernel-modules-cpio`::
+              Enable or disable kernel-modules in the initramfs, by
+              default kernel modules are enabled.
+
+`--initramfs-overlay=<dir>`::
+              Directory structure to inject into the initramfs; this
+              option will automatically generate a CPIO as needed from
+              the directory.
+
+`--external-cpio=<cpio>`::
+              CPIO file to inject into the initramfs.
+
+`--linuxrc=<file>`::
+              Use <file> for the linuxrc instead of the genkernel
+              linuxrc.
+
+`--[no-]keymap-auto`::
+              Force keymap selection at boot.
+
+`--[no-]gensplash`::
+              Enables or disables gensplash support.
+
+`--gensplash-res=<resolutions>`::
+              Optionally select gensplash resolutions to include.
+
+`--gensplash-theme=<theme>`::
+              Select the gensplash theme to use if gensplash support
+              is enabled.
+
+all:: target
+~~~~~~~~~~~~
+
+`--[no-]initramfs`::
+              Do not build a initramfs.
+
+`--[no-]install`::
+              Install or do not install the kernel/initramfs to /boot
+              after building.
+
+`--install-initramfs-path=<...>`::
+              This option specifies an installation destination for
+              the initramfs image.
+
+`--install-path=<...>`::
+              This option specifies an installation destination for
+              the initramfs image and the kernel.
+
+`--install-mod-path=<...>`::
+              This option specifies an installation destination for
+              the kernel modules.
+
+`--[no-]setgroup`::
+              If enabled this option modifies the grub.conf settings
+              to reflect the newly installed kernel and initramfs
+              images.
+
+`--[no-]mountboot`::
+              If enabled `/boot` will be automatically mounted if
+              needed to install the kernel and initramfs images.
+
+INITRAMFS OPTIONS
+-----------------
+
+The following options can be passed as kernel parameters from the
+bootloader, which the initramfs scripts would recognize.
+
+
+`ip=<...>`::
+              Specifies the network configuration to use by the
+              initramfs scripts (optional).
+
+`real_init=<...>`::
+              Passes arguments to init on bootup (optional).
+
+`root=<...>`::
+              Specifies the device type and device node of the root
+              filesystem to mount (mandatory).
+
+`scandelay=<...>`::
+              Pauses for 10 seconds after module insertion if no
+              argument is specified; otherwise pauses for the number
+              of specified seconds (optional).
+
+`unpack=<...>`::
+              Unpacks packages over the root filesystem (optional).
+
+Root device types
+~~~~~~~~~~~~~~~~~
+
+The following root device types can be used with the `root=` option to
+mount the root filesystem.
+
+If you do not know the exact root device type to use, try the `block`
+one first.
+
+If you simply use `root=/dev/xyz`, the block root device type loader
+will be used to mount the device.
+
+Throughout the list, <device> is the device node (for example,
+'/dev/sda1') and [mount_opts] is the options given to mount when
+setting up a given device.
+
+`\block:<device>[:mount_opts]`::
+              Specifies a block device to mount (hard drive, CD-ROM,
+              USB stick).  Examples:
+              - `root=block:/dev/hda2`
+              - `root=block:/dev/hda2:ro,noatime`
+
+`\dmraid:<device>[:mount_opts[:dmraidopts]]`::
+              Specifies a DM RAID deivce to mount, with [dmraidopts]
+              as options given to the `dmraid` binary.  Make sure the
+              initramfs was built with the `--dmraid` option.
+              Examples:
+              - `root=dmraid:/dev/TODO`
+              - `root=dmraid:/dev/TODO:ro,noatime:TODO`
+              - `root=dmraid:/dev/TODO::TODO`
+
+`\evms2:<device>[:mount_opts]`::
+              Specifies an EVMS2 device to mount.  Make sure the
+	      initramfs was built with the `--evms2` option.
+	      Examples:
+              - `root=evms2:/dev/TODO`
+              - `root=evms2:/dev/TODO:ro,noatime`
+
+`livecd[:device[:opts]]`::
+              Specifies mounting of a Gentoo LiveCD.  [opts] can be
+              `docache` to copy the contents of the LiveCD to RAM
+              before mounting it.  Make sure the kernel supports the
+              SquashFS filesystem type.  Examples:
+              - `root=livecd`
+              - `root=livecd:/dev/hdc:docache`
+              - `root=livecd::docache`
+
+`livecd+\nfs:<ip>:<cdfilepath>[:livecd_opts]`::
+              Specifies the mounting of a Gentoo LiveCD on an NFS
+              share.  Make sure the kernel supports the SquashFS
+              filesystem type.  Examples:
+              - `root=livecd+nfs:192.168.0.1:/mnt/livecds/2006.1.iso`
+              - `root=livecd+nfs:192.168.0.1:/mnt/livecds/2006.1.iso:docache`
+
+`livecd+\url:<url>[:livecdopts]`::
+              Downloads (to RAM) a Gentoo LiveCD from a given FTP or
+              HTTP URL, and mounts it.  Make sure the kernel supports
+              the SquashFS filesystem type.  Examples:
+              - `root=livecd+url:http://gentoo.org/2006.1.iso`
+
+`loop:<loopfilepath>`::
+              Mounts a loop file from a given path.  Examples: 
+              - `root=loop:/some/place.squashfs`
+
+`loop+nfs:<ip>:<path>`::
+              Specifies the mounting of one or more loop files on an
+              NFS share.  If the given <path> is a file, only tries to
+              mount the file.  If the <path> is a directory, tries to
+              mount the files and make an union comprising of all loop
+              files in it.  Examples:
+              - `root=loop+nfs:10.0.0.1:/mnt/modules`
+              - `root=loop+nfs:10.0.0.9:/mnt/images/image.squashfs`
+
+`luks+\block:<device>[:mount_opts]`::
+              Specifies the mounting of a LUKS encrypted block device.
+              Examples:
+              - `root=luks+block:/dev/hda2`
+              - `root=luks+block:/dev/hda2:ro,noatime`
+
+`\lvm2:<device>[:mount_opts]`::
+              Specifies the mounting of an LVM2 volume.
+	      Make sure the initramfs was built with the `--lvm2`
+	      option. Examples:
+              - `root=lvm2:/dev/vg/root`
+              - `root=lvm2:/dev/volgroup/vol1:ro,noatime`
+
+`lvm2+\md:<lvmdevice>:<mddevices>[:mount_opts]`::
+              Specifies the mounting of an LVM2 volume over an MD
+              RAID.  Make sure the initramfs was built with the
+              `--lvm2` option.  The [mount_opts] apply to the LVM2
+              device.  Examples:
+              - `root=lvm2+md:/dev/vg/root:/dev/md0`
+              - `root=lvm2+md:/dev/volgroup/vol1:/dev/md1,/dev/md2:ro,noatime`
+
+`\md:<device>[:mount_opts]`::
+              Mounts a MD software RAID device.  Examples: 
+              - `root=md:/dev/md0`
+              - `root=md:/dev/md1:ro,noatime`
+
+`\nfs:<ip>:<dir>[:mount_opts]`::
+              Mounts an NFS share.  Examples:
+              - `root=nfs:192.168.0.1:/mnt/rootfs`
+              - `root=nfs:10.0.0.2:/mnt/system1:ro,nolock`
+
+`quickinstallcd[:arch]`::
+              Automatically downloads the appropriate Gentoo InstallCD
+              for the system architecture and mounts it.  [arch] can
+              be specified to override the detected one.  Make sure
+              the initramfs was built with the `--internal-uclibc`
+              option.  Examples:
+              - `root=quickinstallcd`
+              - `root=quickinstallcd:x86`
+
+`tmpfs[:mount_opts]`::
+              Mounts an empty tmpfs.  Mostly useful to `top` an union.
+              Examples:
+              - `root=tmpfs`
+              - `root=tmpfs:ro`
+
+Netbooting
+~~~~~~~~~~
+
+The initramfs has support for network booting.  The network
+configuration is given by the `ip=<...>` kernel parameter:
+
+................................................................
+ip=<client-ip>::<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>
+................................................................
+
+Note that you can omit any trailing "`:`" in the `ip` kernel option.
+You may leave <netmask>, <hostname>, <device> and <autoconf> empty to
+use defaults values.
+
+Example configurations:
+
+...............................................
+ip=10.0.0.22::10.0.0.1:255.0.0.0:localhost:eth0
+ip=10.0.0.22::10.0.0.1:::eth0
+ip=10.0.0.22::10.0.0.1
+ip=:::::eth1:bootp
+ip=:::::eth5:dhcp
+...............................................
+
+You can also use the shortcut `ip=dhcp` to use DHCP on eth0 to get the
+network configuration.  (Please note that if you need DHCP on any
+other interface, you need to use the full declaration, such as
+`:::::eth1:dhcp`.)
+
+Filesystem Union
+~~~~~~~~~~~~~~~~
+
+You can specify more than one root device on the kernel command-line.
+This will enable UnionFS support and create a unionized root
+filesystem to boot on.
+
+......................
+root=<dev1>;<dev2>;...
+......................
+
+The first device will be on the bottom of the UnionFS stack, the last
+on top.
+
+Make sure the initramfs was built with the `--unionfs` option
+
+Unpack directive
+~~~~~~~~~~~~~~~~
+
+An `unpack=` option specifies the location of packages you would like
+unpacked by the initramfs over the root filesystem.  It will find the
+packages in the final root filesystem, after having mounted all the
+filesystems and completed union of those.
+
+You can specify a particular file or a directory so that it unpacks
+all packages found in it.  You can specify more than one path:
+
+............................................................
+unpack=<file1>;<directory1>;<file2>;<file3>;<directory2>;...
+............................................................
+
+The `tar.gz`, `tgz`, `tar.bz2`, `tbz2` and `tar`
+extensions/compression formats are supported.
+
+Please refer to the `emerge` manual to know how to easily create
+packages with the `--buildpkg` option.
+
+Usage scenarios
+~~~~~~~~~~~~~~~
+
+Some usage scenarios are given in this section.
+
+Test system::
+              You may want to test the installation of a software
+              without modifying your system.  You can use the same
+              normal root filesystem, but mount it read-only, and put
+              a tmpfs overlay into which you can install and test your
+              software.  It will not affect the base system and the
+              changes will be gone when you reboot the system.
+	      - `root=block:/dev/sda1:ro;tmpfs`
+
+LiveCD with NFS state storage::
+              You may mount a LiveCD and store each changes made to
+              the filesystem on an NFS share.  If you reboot using the
+              same kernel parameters, you will find back all the
+              changes made. Example:
+              - `root=livecd:docache;nfs:10.0.0.1:/mnt/livecd_state`
+
+NFS diskless client with state storage in memory::
+              To use an NFS root diskless client which will be
+              completely read-write but based on another read-only
+              filesystem, you can use such a `root=` declaration:
+	      - `root=nfs:192.168.1.1:/mnt/node1:ro;tmpfs`
+
+NFS diskless dlient with NFS state storage::
+              To use an NFS root diskless client which will be
+              completely read-write but based on another read-only
+              root filesystem, you can use such a `root=` declaration.
+              A reboot with the same kernel parameters will give back
+              the system in the state you left it:
+	      - `root=nfs:192.168.1.1:/mnt/node1:ro;nfs:10.0.0.1:/mnt/state:rw`
+
+If you find other interesting and original usage scenarios, please
+send a message to the authors describing how you use genkernel, it
+will be added to the next release's manual page so that everybody can
+learn from your experience.
+
+PROFILES
+--------
+
+genkernel has support for configuration profiles which are useful if you
+end up making repeated customized builds: place all your configuration
+parameters in a profile and then run genkernel with
+`--profile=<path-to-profile` to utilize the profile.
+
+If you want to create a profile from a set of config options then use:
+
+............................................................
+# genkernel --option1 --option2 ... --optionN --profile-dump
+............................................................
+
+Profile syntax is as follows; profiles must not split instructions
+across newlines: if your line is too long use a combination of
+`option := ...` and `option += ...` instructions as required.
+
+`option := "foo"`::
+	This sets `option` to 'foo'. Any previous value from an earlier
+        profile or the system profiles is discarded.
+`option -= "foo bar"`::
+	This subtracts from `option` the values `foo` and `bar` (they
+	do not have to be in that specific order in `option`) if they
+	exist.
+`option += "foo bar"`::
+	This adds to `option` the values `foo` and `bar` in the order
+	specified.
+
+REPORTING BUGS
+--------------
+
+If you believe you have found a bug in the genkernel scripts, then
+please file a bug on the Gentoo Linux Bugzilla: http://bugs.gentoo.org[].
+We cannot assist you with kernel compilation failures unless they are
+caused by a genkernel bug.
+
+Kernel issues for Gentoo-supported kernels, including compilation
+failures should go to http://bugs.gentoo.org[]. Please check if an
+existing bug documents the same issue before opening a new bug.
+
+SEE ALSO
+--------
+
+unionfs(8)
+
+AUTHORS
+-------
+
+Tim Yamin <mailto:plasmaroo@gentoo.org[]>
+
+Eric Edgar <mailto:rocket@gentoo.org[]>
+
+Jean-Francois Richard <mailto:jean-francois@richard.name[]>

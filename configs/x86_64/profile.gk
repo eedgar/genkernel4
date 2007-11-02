@@ -1,0 +1,2 @@
+kernel-make-directive := "bzImage"
+kernel-binary := "arch/x86_64/boot/bzImage"

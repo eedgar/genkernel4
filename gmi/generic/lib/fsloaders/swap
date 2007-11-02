@@ -1,0 +1,41 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and
+#                Jean-Francois Richard <jean-francois@richard.name>
+# Distributed under the terms of the GNU General Public License v2
+#
+# Swap loader
+#
+# ./swap --do-mount mountpoint device
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+parameters() {
+        echo 'device'
+}
+
+do_mount() {
+	# mountpoint is actually ignored; we do it for interoperability
+	local mountpoint="${1}"
+	local device="${2}"
+
+	swapon ${device}
+	assert "$?" "Could not activate swap on block device '${device}'" || return 1
+}
+
+
+case "${1}" in
+	"--parameters")
+		parameters
+		;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

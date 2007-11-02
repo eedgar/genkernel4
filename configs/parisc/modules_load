@@ -1,0 +1,5 @@
+#MODULES_SCSI=""
+#ODULES_FIREWIRE=""
+#ODULES_ATARAID=""
+#ODULES_PCMCIA=""
+#ODULES_USB="usb-ohci hid usb-storage"

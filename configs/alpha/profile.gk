@@ -1,0 +1,2 @@
+kernel-make-directive := "boot"
+kernel-binary := "arch/alpha/boot/vmlinux.gz"

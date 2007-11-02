@@ -1,0 +1,98 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>,
+#                Tim Yamin <plasmaroo@gentoo.org>,
+#                Jean-Francois Richard <jean-francois@richard.name>,
+#		 Donnie Berkholz <dberkholz@gentoo.org>
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# NFS root fs loader for genkernel
+#
+# ./nfs --do-mount mountpoint ip dir mount_opts
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+
+parameters() {
+        echo 'ip dir mount_opts'
+}
+
+
+help() {
+cat << EOHELP
+usage: nfs[:<ip>:<dir>:[mount_opts]] 
+example: 'root=nfs:192.168.0.1:/mnt/rootfs'
+         'root=nfs:10.0.0.2:/mnt/system1:ro,nolock'
+         'root=nfs'
+parameters are
+<ip>           IP address of the NFS server
+<dir>          directory to mount
+[mount_opts]   parameters to pass at mounting of the filesystem
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local server_ip="${2}"
+	local dir="${3}"
+	local mount_opts="${4}"
+	local _mount_opts
+	local option
+	local options
+
+	is_set ${mount_opts} && _mount_opts="-o ${mount_opts}"
+
+	if ! is_set ${server_ip} && ! is_set ${dir}; then
+		# First try: use info from kernel DHCP
+		options=`busybox dmesg | grep rootserver | sed -e "s/,/ /g"`
+		for option in $options
+		do
+			if [ `echo $option | sed -e "s/=/ /g" | cut -d " " -f 1` = 'rootserver' ]; then
+				server_ip=`echo $option | sed -e "s/=/ /g" | cut -d " " -f 2`;
+			fi
+		done
+		options=`busybox dmesg | grep rootpath | sed -e "s/,/ /g"`
+		for option in $options
+		do
+			if [ `echo $option | sed -e "s/=/ /g" | cut -d " " -f 1` = 'rootpath' ]; then
+				dir=`echo $option | sed -e "s/=/ /g" | cut -d " " -f 2`;
+			fi
+		done
+
+		# Second try: use info from udhcp, stored in /etc/initrd.defaults
+		if [ -n "$nfsserver" ]
+		then
+			server_ip="$nfsserver"
+		fi
+		if [ -n "$nfspath" ]
+		then
+			dir="$nfspath"
+		fi
+	fi
+
+	dbg_msg "mount -t nfs ${_mount_opts} ${server_ip}:${dir} ${mountpoint}"
+	mount -t nfs ${_mount_opts} ${server_ip}:${dir} ${mountpoint}
+	assert "$?" "Could not mount NFS share '${server_ip}:${dir}'" || return 1
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

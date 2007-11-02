@@ -1,0 +1,2 @@
+kernel-make-directive := "vmlinux"
+kernel-binary := "vmlinux"

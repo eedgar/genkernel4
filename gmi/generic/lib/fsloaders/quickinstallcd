@@ -1,0 +1,85 @@
+#!/bin/sh
+# Copyright 2006 Eric Edgar <rocket@gentoo.org>, 
+#                Tim Yamin <plasmaroo@gentoo.org> and 
+#                Jean-Francois Richard <jean-francois@richard.name> 
+# Distributed under the terms of the GNU General Public License v2
+#
+#
+# Quick install CD : downloads and mounts the right
+# livecd for your architecture
+#
+# ./quickinstallcd --do-mount mountpoint arch
+#
+
+. /etc/initrd.defaults
+. "${LIBGMI}/libgmi.sh"
+
+### TODO: add some more arch tests
+
+parameters() {
+        echo 'arch'
+}
+
+
+help() {
+cat << EOHELP
+usage: quickinstallcd[:arch] 
+example: 'root=quickinstallcd'
+         'root=quickinstallcd:x86'
+parameters are
+[arch]         architecture of the system (by default, the architecture is 
+               automatically determined)
+EOHELP
+}
+
+
+do_mount() {
+	# unwrapping parameters for human beings
+	local mountpoint="${1}"
+	local given_arch="${2}"
+	local arch="x86"
+
+	if is_set "${given_arch}"
+	then
+		dbg_msg "Arch given on command-line : ${given_arch}"
+		arch="${given_arch}"
+	else
+		# find the 'LiveCD' arch of the current machine
+		# TODO : complete me!
+		case $( uname -m ) in
+			"i?86" )
+				arch="x86"
+				;;
+			"x86_64" )
+				arch="amd64"
+				;;
+			* )
+				dbg_msg "Unknown architecture, will use x86"
+				arch="x86"
+				;;
+		esac
+		dbg_msg "Arch detection result : ${arch}"
+	fi
+
+	dbg_msg "Lauching livecd+url root fs loader"
+	${FSLOADERS}/livecd+url --do-mount ${mountpoint} "http://bouncer.gentoo.org/?product=gentoo-2006.0-minimal&os=${arch}"
+	return $?
+}
+
+
+case "${1}" in
+        "--help")
+                help
+                ;;
+        "--parameters")
+                parameters
+                ;;
+	"--do-mount")
+		shift
+		do_mount $@
+		exit $?
+		;;
+	*)
+		exit 1
+		;;
+esac

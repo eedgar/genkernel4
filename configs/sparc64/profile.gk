@@ -1,0 +1,3 @@
+#kernel-make-directive := "vmlinux"
+kernel-make-directive := "image"
+kernel-binary := "arch/sparc64/boot/image"

@@ -1,0 +1,6 @@
+kernel-make-directive := "linux"
+kernel-binary := "linux"
+
+test := "moo1 moo2 moo3"
+test -= "moo1 moo3"
+test += "moo4"
