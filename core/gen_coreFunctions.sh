@@ -241,7 +241,7 @@ clear_log() {
 	then
 		DEBUGFILE="${TEMP}/genkernel.log"
         export DEBUGFILE
-		print_info 1 ">> Debugfile: ${BOLD}$(profile_get_key debugfile) ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel.log"
+		print_warning 1 ">> Debug log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel.log"
 		if [ ! -w ${TEMP} ]
 		then
 			die "Could not write to ${TEMP}/genkernel.log. Set DEBUGFILE in genkernel.conf or use log-override to use a writeable logfile."
@@ -278,8 +278,7 @@ die_debugged() {
 	print_info 1 "Please consult ${DEBUGFILE} for more information and any"
 	print_info 1 "errors that were reported above."
 	echo
-	print_info 1 "Report any genkernel bugs to bugs.gentoo.org and"
-	print_info 1 "assign your bug to genkernel@gentoo.org. Please include"
+	print_info 1 "Report any genkernel bugs to www.genkernel.org. Please include"
 	print_info 1 "as much information as you can in your bug report; attaching"
 	print_info 1 "${DEBUGFILE} so that your issue can be dealt with effectively."
 	print_info 1 ''
@@ -461,7 +460,7 @@ genkernel_print_header() {
 	# print the header if the profile-dump wasnt specified on the cmdline
 	if [ -z "$(profile_get_key profile-dump user)" ]
 	then
-		NORMAL=${GOOD} print_info 1 "Gentoo Linux Genkernel; Version ${GK_V}${NORMAL}"
+		NORMAL=${GOOD} print_info 1 "genkernel version ${GK_V}${NORMAL} (www.genkernel.org)"
         if [ -n "${Options}" ]
         then
 		    print_info 1 "Running with options: ${Options}"

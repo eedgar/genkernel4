@@ -1,7 +1,6 @@
 Things to fix:
 
-* CACHE_DIR should be created automatically if it does not exist
-
+* Should cleanup TEMP and possibly other places before exiting?
 * cmdline kernel config parameter changing
 
 * make some functions more generic .. ( not necessary right away but would be nice to get done )

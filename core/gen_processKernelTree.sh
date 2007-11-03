@@ -20,7 +20,7 @@ get_KV() {
 
 	if [ ! -w ${KBUILD_OUTPUT} ]
 	then
-		print_info 1 "${KBUILD_OUTPUT} not writeable; attempting to use ${TEMP}/kbuild_output"
+		print_info 1 "Kernel: ${KBUILD_OUTPUT} not writeable; attempting to use ${TEMP}/kbuild_output"
 		KBUILD_OUTPUT="${TEMP}/kbuild_output"
 		if [ ! -w ${TEMP} ]
 		then
@@ -114,7 +114,7 @@ get_KV() {
 genkernel_lookup_kernel() {
 	get_KV $(profile_get_key kernel-tree)
 
-	[ "$1" != 'silent' ] && NORMAL=${BOLD} print_info 1 "Kernel Tree: Linux Kernel ${BOLD}${KV_FULL}${NORMAL} for ${BOLD}${ARCH}${NORMAL}..."
+	[ "$1" != 'silent' ] && print_info 1 "Kernel Tree: Linux kernel ${BOLD}${KV_FULL}${NORMAL} for ${BOLD}$(profile_get_key arch)${NORMAL}, at $(profile_get_key kernel-tree)"
 	provide kernel_src_tree
 }
 

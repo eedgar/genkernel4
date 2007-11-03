@@ -52,7 +52,7 @@ show_help__internal__generate_tabs() {
 }
 
 show_help() {
-	echo "${GOOD}>> ${BOLD}Gentoo Linux Genkernel${NORMAL}; Version ${GK_V}${NORMAL}"
+	echo "${GOOD}>> ${BOLD}genkernel${NORMAL} version ${GK_V}${NORMAL} (www.genkernel.org)"
 	echo "   ${GOOD}Usage:${NORMAL}"
 	echo "		${BOLD}genkernel [options] module${NORMAL}"
 
@@ -183,7 +183,6 @@ show_help() {
 }
 
 show_usage() {
-  echo "Gentoo Linux Genkernel ${GK_V}"
   echo "Usage: "
   echo "	genkernel [options] [module::]+"
   echo

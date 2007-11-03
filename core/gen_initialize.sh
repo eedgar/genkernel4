@@ -1,14 +1,13 @@
 #!/bin/bash
 
-#TODO change to profile parameter ..
-TMPDIR='/var/tmp/genkernel'
+TMPDIR='/tmp'
 TODEBUGCACHE=false # Until an error occurs or DEBUGFILE is fully qualified.
-TEMP="${TMPDIR}/$RANDOM.$$"
+TEMP="${TMPDIR}/genkernel.$RANDOM.$$"
 
 # Find another directory if we clash
 while [ -e "${TEMP}" ]
 do
-    TEMP="${TMPDIR}/$RANDOM.$$"
+    TEMP="${TMPDIR}/genkernel.$RANDOM.$$"
 done
 
 #Internal flag to check if config parsing succeeded

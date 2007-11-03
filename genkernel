@@ -6,14 +6,13 @@
 # License: GPLv2
 
 PATH='/bin:/usr/bin:/sbin:/usr/sbin'
-GK_V='4.0.0_alpha_tag_20070622'
+GK_V='4.0.0'
 
 # Needs to be here in case sourcing a file fails. 
 die() {
   echo "${BAD}Error${NORMAL}: $1"
   exit 1
 }
-
 
 # Autodetect genkernel home if its not set as an env variable
 PATH="${PATH} $(dirname $0)"
@@ -154,9 +153,12 @@ genkernel_print_header
 # FIXME: Needs to be absolute path
 if [ ! -w ${CACHE_DIR} ]
 then
+	# Make the cache directory if it doesn't exist
+	[ -e "${CACHE_DIR}" ] || mkdir -p "${CACHE_DIR}"
+
 	if [ ! -w $(dirname ${CACHE_DIR}) ]
    	then
-		echo "CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
+		print_warning 1 ">> CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
 		if [ ! -w ${TEMP} ]
 		then
 			die "Could not write to ${TEMP}/genkernel_cache/$(profile_get_key profile).  Set CACHE_DIR in genkernel.conf to use a writeable cache directory."
@@ -164,9 +166,8 @@ then
 		CACHE_DIR="${TEMP}/genkernel_cache/$(profile_get_key profile)/"
 	fi
 		
-	# Make the cache directory if it doesnt exist
+	# Make the cache directory if it doesn't exist
 	[ -e "${CACHE_DIR}" ] || mkdir -p "${CACHE_DIR}"
-
 fi
 
 
@@ -232,17 +233,4 @@ do
 done
 
 # End of execution for now
-exit 255
-
-# Clean up...
-[ -n "${CTEMP}" ] && rm -rf "${TEMP}"
-
-## >> FIXME: this needs to be displayed only if the kernel compile fails
-print_info 1 'Do NOT report kernel bugs as genkernel bugs unless your bug'
-print_info 1 'is about the default genkernel configuration...'
-print_info 1 ''
-print_info 1 'Make sure you have the latest genkernel before reporting bugs.'
-## <<
-
-# Final Cleanup
-cleanup
+exit 0
