@@ -497,7 +497,8 @@ root=<dev1>;<dev2>;...
 The first device will be on the bottom of the UnionFS stack, the last
 on top.
 
-Make sure the initramfs was built with the `--unionfs` option
+Make sure the initramfs was built with the `--unionfs` option.  The
+"usage scenarios" section below gives examples of unionfs usage.
 
 Unpack directive
 ~~~~~~~~~~~~~~~~
@@ -517,8 +518,14 @@ unpack=<file1>;<directory1>;<file2>;<file3>;<directory2>;...
 The `tar.gz`, `tgz`, `tar.bz2`, `tbz2` and `tar`
 extensions/compression formats are supported.
 
-Please refer to the `emerge` manual to know how to easily create
-packages with the `--buildpkg` option.
+On Gentoo GNU/Linux, please refer to the `emerge` manual to know how
+to easily create packages with the `--buildpkg` option.
+
+Examples:
+
+...............................................
+root=block:/dev/sda1:ro;tmpfs unpack=/var/ramoverlay.tar;/home/user/testoverlay.tbz2
+...............................................
 
 Usage scenarios
 ~~~~~~~~~~~~~~~
@@ -547,7 +554,7 @@ NFS diskless client with state storage in memory::
               filesystem, you can use such a `root=` declaration:
 	      - `root=nfs:192.168.1.1:/mnt/node1:ro;tmpfs`
 
-NFS diskless dlient with NFS state storage::
+NFS diskless client with NFS state storage::
               To use an NFS root diskless client which will be
               completely read-write but based on another read-only
               root filesystem, you can use such a `root=` declaration.
