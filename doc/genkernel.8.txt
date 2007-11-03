@@ -4,8 +4,8 @@ GENKERNEL(8)
 NAME
 ----
 
-genkernel - the Gentoo Linux automatic kernel compiler and initramfs
-generation tool.
+genkernel - the flexible platform for generating Linux kernel
+and initramfs images.
 
 SYNOPSIS
 --------
@@ -17,7 +17,7 @@ INTRODUCTION
 
 Genkernel is designed to allow users who are not previously used to
 compiling a kernel to use a similar setup to that one that is used on
-the Gentoo LiveCDs which auto-detects your hardware.
+the LiveCDs which auto-detects your hardware.
 
 Some users may also be interested in using genkernel for hardware
 which requires initialization and a working kernel before it can be
@@ -593,9 +593,10 @@ REPORTING BUGS
 --------------
 
 If you believe you have found a bug in the genkernel scripts, then
-please file a bug on the Gentoo Linux Bugzilla: http://bugs.gentoo.org[].
-We cannot assist you with kernel compilation failures unless they are
-caused by a genkernel bug.
+please send a message to the genkernel-dev mailing list
+(<mailto:genkernel-dev@lists.berlios.de[]>).  We cannot assist you
+with kernel compilation failures unless they are caused by a genkernel
+bug.
 
 Kernel issues for Gentoo-supported kernels, including compilation
 failures should go to http://bugs.gentoo.org[]. Please check if an
@@ -604,13 +605,13 @@ existing bug documents the same issue before opening a new bug.
 SEE ALSO
 --------
 
-unionfs(8)
+unionfs(8), http://www.genkernel.org[]
 
 AUTHORS
 -------
 
-Tim Yamin <mailto:plasmaroo@gentoo.org[]>
+Tim Yamin <mailto:plasmaroo@genkernel.org[]>
 
-Eric Edgar <mailto:rocket@gentoo.org[]>
+Eric Edgar <mailto:rocket@genkernel.org[]>
 
-Jean-Francois Richard <mailto:jean-francois@richard.name[]>
+Jean-Francois Richard <mailto:trucker@genkernel.org[]>
