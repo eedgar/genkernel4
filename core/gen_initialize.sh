@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TMPDIR='/tmp'
+TMPDIR='/var/tmp'
 TODEBUGCACHE=false # Until an error occurs or DEBUGFILE is fully qualified.
 TEMP="${TMPDIR}/genkernel.$RANDOM.$$"
 
