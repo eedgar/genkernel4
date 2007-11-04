@@ -1,0 +1,6 @@
+genkernel (4.0.0-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Jean-François Richard <trucker@genkernel.org>  Sat, 03 Nov 2007 21:57:46 -0400
+

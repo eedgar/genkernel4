@@ -1,0 +1,23 @@
+This package was debianized by Jean-François Richard <trucker@genkernel.org> on
+Sat, 03 Nov 2007 21:57:46 -0400.
+
+It was downloaded from <http://www.genkernel.org>
+
+Upstream Author(s): 
+
+    Eric Edgar <rocket@genkernel.org>
+    Tim Yamin <plasmaroo@genkernel.org>
+    Jean-François Richard <trucker@genkernel.org>
+
+Copyright: 
+
+    Copyright (C) 2007 Eric Edgar
+    Copyright (C) 2007 Tim Yamin
+    Copyright (C) 2007 Jean-François Richard
+
+License:
+
+    GPL
+
+The Debian packaging is (C) 2007, Jean-François Richard <trucker@genkernel.org> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.

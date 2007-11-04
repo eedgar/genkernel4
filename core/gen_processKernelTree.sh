@@ -9,7 +9,7 @@ get_KV() {
 	KNAME="$(profile_get_key kernel-name)"
 	
 	KERNEL_DIR="$1"
-	[ ! -e "$1/Makefile" ] && die 'Kernel source tree invalid, no Makefile found!'
+	[ ! -e "$1/Makefile" ] && die "Kernel source tree '$KERNEL_DIR' invalid, no Makefile found!"
 
 	if [ -n "$(profile_get_key kbuild-output)" ]
 	then
