@@ -15,21 +15,19 @@ SYNOPSIS
 INTRODUCTION
 ------------
 
-Genkernel is designed to allow users who are not previously used to
-compiling a kernel to use a similar setup to that one that is used on
-the LiveCDs which auto-detects your hardware.
+Genkernel is a platform designed to help users build kernel and
+initramfs images.  It provides several configuration options to
+support particular hardware setups and sports a flexible initramfs
+script library to allow booting from many types of devices.
 
-Some users may also be interested in using genkernel for hardware
-which requires initialization and a working kernel before it can be
-booted because genkernel also automatically compiles your kernel
-modules, allowing hardware which needs to be loaded with module
-parameters to be used -- genkernel's initramfs is flexible and
-supports a variety of systems such as LVM2, EVMS, UnionFS, LUKS,
-as well as various netbooting options.
+Genkernel's initramfs supports a variety of systems such as LVM2,
+EVMS, aufs, UnionFS, LUKS, as well as various netbooting options.  It
+can also provide LiveCD-style autoconfiguration of devices using
+kernel modules with special parameters.
 
 Note that because genkernel 4.0 builds initramfs based images; a Linux
 kernel of 2.6 or newer is required. For initrd generation please use
-the legacy genkernel 3.3.
+the legacy genkernel 3.
 
 USAGE
 -----
