@@ -1,4 +1,4 @@
-genkernel (4.0.0-1) unstable; urgency=low
+genkernel (4.0.0-0ubuntu1) gutsy; urgency=low
 
   * Initial release
 

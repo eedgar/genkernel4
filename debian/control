@@ -1,5 +1,5 @@
 Source: genkernel
-Section: unknown
+Section: devel
 Priority: extra
 Maintainer: Jean-François Richard <trucker@genkernel.org>
 Build-Depends: debhelper (>= 5), asciidoc (>= 8), xsltproc (>= 1), docbook-xml (>= 4), docbook-xsl (>= 1.6)
