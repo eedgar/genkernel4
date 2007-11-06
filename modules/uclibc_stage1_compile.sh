@@ -33,22 +33,10 @@ uclibc_stage1_compile::()
     	config_unset ".config" "CROSS_COMPILER_PREFIX"
 	fi
 
-	UCLIBC_TARGET_ARCH=$(echo ${ARCH} | sed -e s'/-.*//' \
-        -e 's/x86$/i386/' \
-        -e 's/sparc.*/sparc/' \
-        -e 's/arm.*/arm/g' \
-        -e 's/m68k.*/m68k/' \
-        -e 's/ppc/powerpc/g' \
-        -e 's/v850.*/v850/g' \
-        -e 's/sh[234].*/sh/' \
-        -e 's/mips.*/mips/' \
-        -e 's/mipsel.*/mips/' \
-        -e 's/cris.*/cris/' \
-        -e 's/nios2.*/nios2/' \
-		)
+	UCLIBC_TARGET_ARCH=$(profile_get_key utils-arch)
 
 	# just handle the ones that can be big or little
-	UCLIBC_TARGET_ENDIAN=$(echo ${ARCH} | sed \
+	UCLIBC_TARGET_ENDIAN=$(echo ${UCLIBC_TARGET_ARCH} | sed \
         -e 's/armeb/BIG/' \
         -e 's/arm/LITTLE/' \
         -e 's/mipsel/LITTLE/' \

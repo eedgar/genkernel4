@@ -15,8 +15,7 @@ die() {
 }
 
 # Autodetect genkernel home if its not set as an env variable
-PATH="${PATH} $(dirname $0) $(dirname `pwd`/$(readlink $0)) $(dirname $(readlink -f $(which genkernel))
-)"
+PATH="${PATH} $(dirname $0 2>/dev/null) $(dirname `pwd`/$(readlink $0 2>/dev/null) 2>/dev/null) $(dirname $(readlink -f $(which genkernel 2>/dev/null) 2>/dev/null) 2>/dev/null)"
 if [ "$GENKERNEL_HOME" == "" ]
 then
     for i in $PATH
