@@ -62,7 +62,7 @@ do_mount() {
 	fi
 
 	dbg_msg "Lauching livecd+url root fs loader"
-	${FSLOADERS}/livecd+url --do-mount ${mountpoint} "http://bouncer.gentoo.org/?product=gentoo-2006.0-minimal&os=${arch}"
+	${FSLOADERS}/livecd+url --do-mount ${mountpoint} "http://bouncer.gentoo.org/fetch/gentoo-2007.0-minimal/${arch}/"
 	return $?
 }
 

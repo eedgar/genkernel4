@@ -8,12 +8,6 @@
 # Functions library for GMI scripts, generic functions
 #
 
-### TODO: splash stuff...
-#
-#
-splash() {
-	return 0
-}
 
 # FS loaders can register env variables that will
 # be passed to the running system after they return

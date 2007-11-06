@@ -10,9 +10,6 @@
 . /etc/initrd.defaults
 . "${LIBGMI}/libgmi.sh"
 
-### TODO: splash stuff...
-[ -e /etc/initrd.splash ] && . /etc/initrd.splash
-
 /bin/busybox mount -o remount,rw / 2>/dev/null
 /bin/busybox mount -t proc proc /proc 2>/dev/null
 /bin/busybox mount -t sysfs /sys /sys 2>/dev/null
@@ -25,9 +22,6 @@ then
 	echo '/init has to be run as the init process with a PID of 1'
 	exit 1
 fi
-
-### TODO: splash stuff...
-splash 'init'
 
 # mv /sbin/insmod to /bin/insmod or modprobe breaks 
 # Busybox 1.1.0
@@ -395,13 +389,9 @@ then
 fi
 
 
-### TODO: splash stuff...
-# Required for gensplash to work.  Not an issue with the initrd as this device isnt created there and is not needed.
+# Drop to shell now that all is set, for inspection
 [ -n "$DEBUG" ] && shell
-if [ -e /dev/tty1 -a ! -e ${ROOTFS}/dev/tty1 ]
-then
-	mv /dev/tty1 ${ROOTFS}/dev
-fi
+
 
 # Clean up env
 unset DEBUG
@@ -420,9 +410,6 @@ else
 	[ ! -e ${ROOTFS}/dev/console ] && mknod ${ROOTFS}/dev/console c 5 1
 	exec switch_root "${ROOTFS}" "${INIT}" "${INIT_ARGS}"
 fi
-
-### TODO: splash stuff...
-splash 'verbose'
 
 echo 'A fatal error has probably occured since /sbin/init did not'
 echo 'boot correctly. Trying to open a shell...'

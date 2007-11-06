@@ -80,6 +80,8 @@ load_modules() {
 
 # Loads and start UnionFS, create appropriate directories as needed
 #
+# Use setup_unionfsalike, not this function directly.
+#
 # (No parameters)
 #
 setup_unionfs() {
@@ -105,6 +107,10 @@ setup_unionfs() {
 	fi
 }
 
+# Loads and start UnionFS, create appropriate directories as needed
+#
+# (No parameters)
+#
 setup_unionfsalike() {
 	# Use aufs if available; otherwise let's try unionfs
 	grep -qs 'aufs' /proc/filesystems
