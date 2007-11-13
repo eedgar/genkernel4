@@ -34,15 +34,17 @@ then
     exit 1
 fi
 
+# Read-only stuff
 CORE_DIR="$GENKERNEL_HOME/core"
 MODULES_DIR="$GENKERNEL_HOME/modules"
 CONFIG_DIR="$GENKERNEL_HOME/configs/"
 CONFIG_GENERIC_DIR="$GENKERNEL_HOME/configs/generic"
-CACHE_DIR="$GENKERNEL_HOME/cache/"
 GMI_DIR="$GENKERNEL_HOME/gmi"
 SRCPKG_DIR="$GENKERNEL_HOME/dist"
 FIXES_FILES_DIR="$GENKERNEL_HOME/fixes/files"
 FIXES_PATCHES_DIR="$GENKERNEL_HOME/fixes/patches"
+# Read-write stuff
+CACHE_DIR="/var/tmp/genkernel-$USERNAME"
 
 if [ -f /etc/genkernel/genkernel.conf ]
 then
@@ -111,8 +113,16 @@ profile_copy "system"
 # as this one overrides the rest of them. This contains the cmdline and imported profiles
 profile_copy "user"
 
-# Set TEMP if tempdir is defined
-[ -n "$(profile_get_key tempdir)" ] && TEMP="$(profile_get_key tempdir)"
+# Set TEMP
+if [ -n "$(profile_get_key tempdir)" ]; then
+    TEMP="$(profile_get_key tempdir)"
+    mkdir -p "${TEMP}" || die "Could not create temporary directory '${TEMP}'!"
+    # remove the genkernel-output folder if it exists
+    rm -r ${TEMP}/genkernel-output &> /dev/null
+    [ ! -w "${TEMP}" ] die "Cannot have write access to temporary directory '${TEMP}'!"
+else
+    TEMP=$( mktemp -d ) || die "Failed to create temporary directory!"
+fi
 
 set_color 
 
@@ -137,39 +147,17 @@ else
 fi
 
 
-# Generate TEMP dir
-if [ ! -d "${TEMP}" ]
-then
-	mkdir -p "${TEMP}" || die "Failed to create temporary directory!"
-fi
-
-# remove the genkernel-output folder if it exists
-rm -r ${TEMP}/genkernel-output >/dev/null 2>&1
-
-
 clear_log
 genkernel_print_header
 
 # FIXME: Needs to be absolute path
-if [ ! -w ${CACHE_DIR} ]
-then
-	# Make the cache directory if it doesn't exist
-	[ -e "${CACHE_DIR}" ] || mkdir -p "${CACHE_DIR}"
+mkdir -p "${CACHE_DIR}" &> /dev/null
 
-	if [ ! -w $(dirname ${CACHE_DIR}) ]
-   	then
-		print_warning 1 ">> CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
-		if [ ! -w ${TEMP} ]
-		then
-			die "Could not write to ${TEMP}/genkernel_cache/$(profile_get_key profile).  Set CACHE_DIR in genkernel.conf to use a writeable cache directory."
-		fi
-		CACHE_DIR="${TEMP}/genkernel_cache/$(profile_get_key profile)/"
-	fi
-		
-	# Make the cache directory if it doesn't exist
-	[ -e "${CACHE_DIR}" ] || mkdir -p "${CACHE_DIR}"
+if [ ! -w "${CACHE_DIR}" ]; then
+    print_warning 1 ">> CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
+    CACHE_DIR="${TEMP}/genkernel_cache/$(profile_get_key profile)/"
+    mkdir -p "${CACHE_DIR}"
 fi
-
 
 genkernel_lookup_packages
 genkernel_lookup_kernel
