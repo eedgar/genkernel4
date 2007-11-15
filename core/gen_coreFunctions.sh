@@ -50,7 +50,7 @@ trap_cleanup(){
 
 cleanup(){
     if [ -n "$TEMP" -a -d "$TEMP" ]; then
-    rm -rf "$TEMP"
+	rm -rf "$TEMP"
     fi
 
     if logicTrue ${POSTCLEAR}
