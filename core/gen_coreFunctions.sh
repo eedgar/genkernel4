@@ -229,30 +229,16 @@ cache_replace() {
 }
 
 clear_log() {
-	# Set DEBUGFILE if log-override is defined
-	[ -n "${DEBUGFILE}" ] && profile_set_key debugfile "${DEBUGFILE}"
-	if [ -n "$(profile_get_key log-override)" ]
-	then
-		DEBUGFILE="$(profile_get_key log-override)"
-		profile_set_key debugfile "${DEBUGFILE}"
-	fi
+        # Override with env variable, if non-zero
+    	[ -n "${DEBUGFILE}" ] && profile_set_key debugfile "${DEBUGFILE}"
 
-	if [ ! -w "$(dirname $(profile_get_key debugfile))" ]
-	then
-		DEBUGFILE="${TEMP}/genkernel.log"
-        export DEBUGFILE
-		print_warning 1 ">> Debug log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel.log"
-		if [ ! -w ${TEMP} ]
-		then
-			die "Could not write to ${TEMP}/genkernel.log. Set DEBUGFILE in genkernel.conf or use log-override to use a writeable logfile."
-		fi
-	fi
-	if [ -f "${DEBUGFILE}" ]
-	then
-		(echo > "${DEBUGFILE}") 2>/dev/null || \
-		die "Could not write to ${TEMP}/genkernel.log. Set DEBUGFILE in genkernel.conf or use log-override to set a writeable logfile."
-	fi
-	profile_set_key debugfile "${TEMP}/genkernel.log"
+	# If the profile is mute on the destination file, or the destination
+	# is not writable, use mktemp.
+	[ -z "$(profile_get_key debugfile)" ] && DEBUGFILE="$(mktemp -t genkernel.log.XXXXXXXXXX)"
+	[ ! -w "$(profile_get_key debugfile)" ]  && DEBUGFILE="$(mktemp -t genkernel.log.XXXXXXXXXX)"
+
+	profile_set_key debugfile "${DEBUGFILE}"
+	print_info 1 ">> Debug log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}"
 }
 
 die_debugged() {

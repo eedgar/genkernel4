@@ -15,7 +15,19 @@ die() {
 }
 
 # Autodetect genkernel home if its not set as an env variable
-PATH="${PATH} $(dirname $0 2>/dev/null) $(dirname `pwd`/$(readlink $0 2>/dev/null) 2>/dev/null) $(dirname $(readlink -f $(which genkernel 2>/dev/null) 2>/dev/null) 2>/dev/null)"
+PATH="${PATH} $(dirname $0 2>/dev/null)"
+
+if which genkernel 2>/dev/null; then
+    gkpath="$(which genkernel)"
+    PATH="${PATH} $( dirname '${gkpath}' 2>/dev/null )"
+
+    # is it a link pointing to the real gk_home?
+    if readlink "${gkpath}" 2>/dev/null; then
+	gkpath=$( readlink "${gkpath}" 2>/dev/null )
+	PATH="${PATH} $( dirname '${gkpath}' 2>/dev/null )"
+    fi
+fi
+
 if [ "$GENKERNEL_HOME" == "" ]
 then
     for i in $PATH
@@ -121,7 +133,7 @@ if [ -n "$(profile_get_key tempdir)" ]; then
     rm -r ${TEMP}/genkernel-output &> /dev/null
     [ ! -w "${TEMP}" ] die "Cannot have write access to temporary directory '${TEMP}'!"
 else
-    TEMP=$( mktemp -d ) || die "Failed to create temporary directory!"
+    TEMP=$( mktemp -d -t genkernel.workdir.XXXXXXXXXX ) || die "Failed to create temporary directory!"
 fi
 
 set_color 

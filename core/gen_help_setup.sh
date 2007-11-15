@@ -24,7 +24,6 @@ __register_config_option 'Internals' 'profile-dump' 'false' 'false' 'Dump the cu
 __register_config_option 'Internals' 'usecolor' 'false' 'true' 'Use colored output.'
 profile_set_key usecolor true 'system'
 __register_config_option 'Internals' 'help' 'false' 'false' '' # Hidden.
-__register_config_option 'Internals' 'log-override' 'true' 'false' '' # Hidden.
 
 ## Cross Compilation
 __register_config_option 'Cross compile' 'cross-compile' 'true' 'false' 'Cross compiler settings (Overrides kernel-cross-compile and utils-cross-compile)'
