@@ -39,5 +39,5 @@ shift
 shift
 # phew. alright now!
 
-echo "Running genkernel --kernel-tree='$ktree' $@"
-genkernel --kernel-tree="$ktree" $@
+echo "Running genkernel $@ --kernel-tree='$ktree' $@"
+genkernel $@ --kernel-tree="$ktree"
