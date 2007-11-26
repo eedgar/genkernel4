@@ -26,7 +26,7 @@ ktag="$2"
 [ ! -d "$ktree/.git" ] && usage "The path specified for the kernel tree is not a Git directory."
 cd "$ktree"
 if [ "$ktag" != "latest" ]; then
-    [ "$(git-tag -l $ktag)" != "$ktag" ] && usage "The specified tag does not exist in the kernel git tree"
+    [ "$(git-tag -l ^$ktag\$)" != "$ktag" ] && usage "The specified tag does not exist in the kernel git tree"
 else
     ktag="$(git-tag | tail -n1 )"
 fi
@@ -39,5 +39,7 @@ shift
 shift
 # phew. alright now!
 
-echo "Running genkernel $@ --kernel-tree='$ktree' $@"
+echo "Running genkernel $@ --kernel-tree='$ktree'"
+echo
+echo
 genkernel $@ --kernel-tree="$ktree"
