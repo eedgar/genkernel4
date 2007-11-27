@@ -28,8 +28,12 @@ cd "$ktree"
 if [ "$ktag" != "latest" ]; then
     [ "$(git-tag -l ^$ktag\$)" != "$ktag" ] && usage "The specified tag does not exist in the kernel git tree"
 else
-    ktag="$(git-tag | tail -n1 )"
+    echo -n "Finding the latest commit... "
+    ktag=$( for i in `git-rev-parse --tags`; do git-log --pretty=format:"%ct %H" -1 $i; echo ; done | sort | cut -f2 -d' ' | tail -n1 )
+    ktag=$( git-describe "$ktag" )
+    echo $ktag
 fi
+
 echo "Checking out tag '$ktag' in the kernel tree"
 git-checkout "$ktag" || exit 1
 
