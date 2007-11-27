@@ -1,6 +1,8 @@
 Things to fix:
 
-* Should cleanup TEMP and possibly other places before exiting?
+* Put up an http://genkernel.org/dist/ repository, and auto-download
+  the need files to local cache if needed
+
 * cmdline kernel config parameter changing
 
 * make some functions more generic .. ( not necessary right away but would be nice to get done )

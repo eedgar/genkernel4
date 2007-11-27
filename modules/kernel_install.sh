@@ -2,59 +2,40 @@ require kernel_compile
 
 kernel_install::()
 {
-	# Set up some globals
-	# Set the destination path for the kernel
-	if [ -z "$(profile_get_key install-path)" ]
-	then
-		profile_set_key install-path "$(profile_get_key bootdir)"
-	fi
+    local INSTO CP_ARGS KNAME
 
-	if [ -w $(dirname $(profile_get_key install-path)) ]
-	then
-		mkdir -p $(profile_get_key install-path) || \
-			die "Could not make $(profile_get_key install-path).  Set $(profile_get_key install-path) to a writeable directory or run as root"
-	else
-		print_info 1 ">> Kernel install path: ${BOLD}$(profile_get_key install-path) ${NORMAL}is not writeable, attempting to use ${TEMP}/genkernel-output"
-		if [ ! -w ${TEMP} ]
-		then
-			die "Could not write to ${TEMP}/genkernel-output.  Set install-path to a writeable directory or run as root"
-		else
-			mkdir -p ${TEMP}/genkernel-output/boot || die "Could not make ${TEMP}/genkernel-output/boot/.  Set install-path to a writeable directory or run as root"
-			profile_set_key install-path "${TEMP}/genkernel-output/boot/"
-		fi
-	fi
-	KERNEL_ARGS="${KERNEL_ARGS} INSTALL_PATH=$(profile_get_key install-path)"
+    INSTO="$(profile_get_key install-to-prefix)$(profile_get_key bootdir)"
+    mkdir -p "${INSTO}" &> /dev/null
+    [ ! -w "${INSTO}" ] && die "Could not write to ${INSTO}.  Set install-to-prefix/bootdir to a writeable directory or run as root."
 
-	local CP_ARGS KNAME
+    
+    KERNEL_ARGS="${KERNEL_ARGS} INSTALL_PATH=${INSTO}"
 
-	KNAME="$(profile_get_key kernel-name)"
-	
-	setup_kernel_args
-	cd "$(profile_get_key kbuild-output)"
+    KNAME="$(profile_get_key kernel-name)"
+    setup_kernel_args
 
-	print_info 1 '>> Installing kernel ...'
+    cd "$(profile_get_key kbuild-output)"
 
-	[ "$(profile_get_key debuglevel)" -gt "1" ] && CP_ARGS="-v"
-	[ "$(profile_get_key debuglevel)" -gt "1" ] &&\
-		print_info 1 ">> Installing kernel to $(profile_get_key install-path)/kernel-${KV_FULL}"
-	cp ${CP_ARGS} "$(profile_get_key kernel-binary)" "$(profile_get_key install-path)/kernel-${KV_FULL}"
-	cp ${CP_ARGS} "System.map" "$(profile_get_key install-path)/System.map-${KV_FULL}"
+    print_info 1 '>> Installing kernel ...'
 
-	if [ -w /etc/kernels ]
-	then
-		profile_set_key kernel-config-destination-path "/etc/kernels"
-	else
-		print_info 1 ">> Kernel config install path: ${BOLD}/etc/kernels${NORMAL} is not writeable attempting to use ${TEMP}/genkernel-output"
-		if [ ! -w ${TEMP} ]
-		then
-			die "Could not write to ${TEMP}/genkernel-output."
-		else
-			mkdir -p ${TEMP}/genkernel-output/etc/kernels || die "Could not make ${TEMP}/genkernel-output."
-			profile_set_key kernel-config-destination-path "${TEMP}/genkernel-output/etc/kernels"
-		fi
-	fi
-	
-	cp .config "$(profile_get_key kernel-config-destination-path)/kernel-config-${KV_FULL}"
-	print_info 1 "Kernel config file saved to $(profile_get_key kernel-config-destination-path)/kernel-config-${KV_FULL}"
+    [ "$(profile_get_key debuglevel)" -gt "1" ] && CP_ARGS="-v"
 
+    cp ${CP_ARGS} "$(profile_get_key kernel-binary)" "${INSTO}/kernel-${KV_FULL}"
+    cp ${CP_ARGS} "System.map" "${INSTO}/System.map-${KV_FULL}"
+    print_info 1 "Kernel installed in ${BOLD}${INSTO}${NORMAL} :"
+
+    cd "${INSTO}"
+    print_info 1 "$( du -h kernel-${KV_FULL} )"
+    print_info 1 "$( du -h System.map-${KV_FULL} )"
+    cd - &>/dev/null
+
+    if [ -w "/etc/kernels" ]; then
+	print_info 1 "Kernel config saved to:"
+	print_info 1 "   ${BOLD}/etc/kernels/kernel-${KV_FULL}.config${NORMAL}"
+	cp ${CP_ARGS} .config "/etc/kernels/kernel-${KV_FULL}.config"
+    else
+	print_info 1 "Kernel config saved to:"
+	print_info 1 "   ${BOLD}${INSTO}/kernel-${KV_FULL}.config${NORMAL}"
+	cp ${CP_ARGS} .config "${INSTO}/kernel-${KV_FULL}.config"
+    fi
 }

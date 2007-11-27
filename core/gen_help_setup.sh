@@ -102,18 +102,15 @@ __register_config_option 'Initramfs' 'unionfs' 'false' 'true' '' # Description e
 ## ALL options
 __register_config_option '"all::" target' 'initramfs' 'false' 'true' 'Build a initramfs'
 profile_set_key initramfs true 'system'
-__register_config_option '"all::" target' 'install' 'false' 'true' 'Install the kernel/initramfs to /boot after building.'
-profile_set_key install true 'system'
 
 ## Installation options
-__register_config_option 'Install' 'install-initramfs-path' 'true' 'false' 'Destination of initramfs'
-__register_config_option 'Install' 'install-path' 'true' 'false' 'Destination of kernel and initramfs'
-__register_config_option 'Install' 'install-mod-path' 'true' 'false' 'Destination of kernel modules'
+__register_config_option 'Install' 'install-to-prefix' 'true' 'false' 'Destination prefix for initramfs, kernel and modules; default /.'
+profile_set_key install-to-prefix '/' 'system'
 
 __register_config_option 'Install' 'setgrub' 'false' 'true' 'Setup the grub.conf file'
 profile_set_key setgrub false 'system'
 
-__register_config_option 'Install' 'links' 'false' 'true' 'Create symbolic links to the generated kernel and/or initramfs'
+__register_config_option 'Install' 'links' 'true' 'true' 'Create symbolic links to the generated kernel and/or initramfs'
 profile_set_key links false 'system'
 
 __register_config_option 'Install' 'mountboot' 'false' 'true' 'Mount /boot automatically.'

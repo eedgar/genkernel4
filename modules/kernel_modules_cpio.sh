@@ -6,7 +6,7 @@ kernel_modules_cpio::()
 		print_info 1 ">> Modules not enabled in .config... skipping modules compile"
 	else
 		MOD_EXT=".ko"
-		INSTALL_MOD_PATH="$(profile_get_key install-mod-path)"
+		INSTALL_MOD_PATH="$(profile_get_key install-to-prefix)"
 		
 		print_info 2 "initramfs: >> Searching for modules..."
 
@@ -32,7 +32,7 @@ kernel_modules_cpio::()
 			cp -ax --parents "${mymod}" "${TEMP}/initramfs-modules-${KV_FULL}-temp"
 		done
 
-		if [ -f "$(profile_get_key install-mod-path)"/lib/modules/${KV_FULL}/modules.dep ]
+		if [ -f "$(profile_get_key install-to-prefix)"/lib/modules/${KV_FULL}/modules.dep ]
 		then
 			print_info 2 "Copying modules.dep into the initramfs"
 			cp -ax --parents "./lib/modules/${KV_FULL}/modules.dep" "${TEMP}/initramfs-modules-${KV_FULL}-temp/"

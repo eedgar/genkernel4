@@ -64,9 +64,6 @@ cleanup(){
         print_info 1 "CACHE_CPIO_DIR: ${CACHE_CPIO_DIR}"
         CLEAR_CPIO_CACHE='yes'
         clear_cpio_dir
-        echo
-        print_info 1 "TMPDIR: ${TMPDIR}"
-        clear_tmpdir
     fi
 }
 
@@ -238,7 +235,7 @@ clear_log() {
 	[ ! -w "$(profile_get_key debugfile)" ]  && DEBUGFILE="$(mktemp -t genkernel.log.XXXXXXXXXX)"
 
 	profile_set_key debugfile "${DEBUGFILE}"
-	print_info 1 ">> Debug log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}"
+	print_info 1 ">> Detailled log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}"
 }
 
 die_debugged() {
@@ -329,19 +326,6 @@ setup_cache_dir()
 	fi
 }
 
-clear_tmpdir()
-{
-	if ! logicTrue ${CMD_NOINSTALL}
-	then
-		TMPDIR_CONTENTS=`ls ${TMPDIR}`
-		print_info 1 "Removing tmp dir contents"
-		for i in ${TMPDIR_CONTENTS}
-		do
-			print_info 1 "	 >> Removing ${i}"
-			rm ${TMPDIR}/${i}
-		done
-	fi
-}
 
 # subtract_from_list item list
 subtract_from_list() {

@@ -15,22 +15,11 @@ get_KV() {
 	then
 		KBUILD_OUTPUT="$(profile_get_key kbuild-output)"
 	else
-		KBUILD_OUTPUT=${KERNEL_DIR}
+		KBUILD_OUTPUT="${CACHE_DIR}/kbuild_output"
+		mkdir -p ${KBUILD_OUTPUT}
 	fi
 
-	if [ ! -w ${KBUILD_OUTPUT} ]
-	then
-		print_info 1 "Kernel: ${KBUILD_OUTPUT} not writeable; attempting to use ${TEMP}/kbuild_output"
-		KBUILD_OUTPUT="${TEMP}/kbuild_output"
-		if [ ! -w ${TEMP} ]
-		then
-			die "Could not write to ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
-		else
-			mkdir -p ${KBUILD_OUTPUT} || die "Could not make ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
-		fi
-	else
-		mkdir -p ${KBUILD_OUTPUT} || die "Could not make ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
-	fi
+	[ ! -w ${KBUILD_OUTPUT} ] && "Could not write to ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
 		
 	profile_set_key kbuild-output ${KBUILD_OUTPUT}
     
@@ -207,8 +196,8 @@ check_asm_link_ok() {
 # this is mainly for setting integers, but the other kernel_config_set could be
 # refactored to use it.
 kernel_config_set_raw() {
-	sed -i ${KBUILD_OUTPUT}/.config -e "s|#\? \?CONFIG_${1} is.*|CONFIG_${1}=${2}|g"
-	sed -i ${KBUILD_OUTPUT}/.config -e "s|CONFIG_${1}=.*|CONFIG_${1}=${2}|g"
+	sed -i ${KBUILD_OUTPUT}/.config -e "s|#\? \?CONFIG_${1} is.*|CONFIG_${1}=${2}|g" 2>/dev/null
+	sed -i ${KBUILD_OUTPUT}/.config -e "s|CONFIG_${1}=.*|CONFIG_${1}=${2}|g" 2>/dev/null
 	if ! kernel_config_is_set ${1}
 	then
 		echo "CONFIG_${1}=${2}" >> ${KBUILD_OUTPUT}/.config
@@ -223,8 +212,8 @@ kernel_config_set_string() {
 
 kernel_config_set_builtin() {
 	# TODO need to check for null entry entirely
-	sed -i ${KBUILD_OUTPUT}/.config -e "s/CONFIG_${1}=m/CONFIG_${1}=y/g"
-	sed -i ${KBUILD_OUTPUT}/.config -e "s/#\? \?CONFIG_${1} is.*/CONFIG_${1}=y/g"
+	sed -i ${KBUILD_OUTPUT}/.config -e "s/CONFIG_${1}=m/CONFIG_${1}=y/g" 2>/dev/null
+	sed -i ${KBUILD_OUTPUT}/.config -e "s/#\? \?CONFIG_${1} is.*/CONFIG_${1}=y/g" 2>/dev/null
 	if ! kernel_config_is_set ${1}
 	then
 		echo "CONFIG_${1}=y" >> ${KBUILD_OUTPUT}/.config
@@ -233,8 +222,8 @@ kernel_config_set_builtin() {
 
 kernel_config_set_module() {
 	# TODO need to check for null entry entirely
-	sed -i ${KBUILD_OUTPUT}/.config -e "s/CONFIG_${1}=y/CONFIG_${1}=m/g"
-	sed -i ${KBUILD_OUTPUT}/.config -e "s/#\? \?CONFIG_${1} is.*/CONFIG_${1}=m/g"
+	sed -i ${KBUILD_OUTPUT}/.config -e "s/CONFIG_${1}=y/CONFIG_${1}=m/g" 2>/dev/null
+	sed -i ${KBUILD_OUTPUT}/.config -e "s/#\? \?CONFIG_${1} is.*/CONFIG_${1}=m/g" 2>/dev/null
 	if ! kernel_config_is_set ${1}
 	then
 		echo "CONFIG_${1}=m" >> ${KBUILD_OUTPUT}/.config
@@ -242,7 +231,7 @@ kernel_config_set_module() {
 }
 
 kernel_config_unset() {
-	sed -i "${KBUILD_OUTPUT}"/.config -e "s/CONFIG_${1}=.*/# CONFIG_${1} is not set/g"
+	sed -i "${KBUILD_OUTPUT}"/.config -e "s/CONFIG_${1}=.*/# CONFIG_${1} is not set/g" 2>/dev/null
 }
 
 # you should check kernel_config_is_set before trusting this, beware
@@ -281,34 +270,39 @@ kernel_config_is_not_set() {
 
 
 determine_config_file() {
-	# echo "$(profile_get_key kernel-config)"
-	# echo "/etc/kernels/kernel-config-${ARCH}-${KV_FULL}"
-	# echo "${CONFIG_DIR}/kernel-config-${KV_FULL}"
-	# echo "${DEFAULT_KERNEL_CONFIG}"
-	# echo "${CONFIG_DIR}/kernel-config-${KV_MAJOR}.${KV_MINOR}"
-	# echo "${CONFIG_DIR}/kernel-config"
 
-	if [ -n "$(profile_get_key kernel-config)" ]
-	then
-		KERNEL_CONFIG="$(profile_get_key kernel-config)"
-	elif [ -f "/etc/kernels/kernel-config-${KV_FULL}" ]
-	then
-		KERNEL_CONFIG="/etc/kernels/kernel-config-${KV_FULL}"
-	elif [ -f "${CONFIG_DIR}/kernel-config-${KV_FULL}" ]
-	then
-		KERNEL_CONFIG="${CONFIG_DIR}/kernel-config-${KV_FULL}"
-	elif [ "${DEFAULT_KERNEL_CONFIG}" != "" -a -f "${DEFAULT_KERNEL_CONFIG}" ]
-	then
-		KERNEL_CONFIG="${DEFAULT_KERNEL_CONFIG}"
-	elif [ -f "${CONFIG_DIR}/kernel-config-${KV_MAJOR}.${KV_MINOR}" ]
-	then
-		KERNEL_CONFIG="${CONFIG_DIR}/kernel-config-${KV_MAJOR}.${KV_MINOR}"
-	elif [ -f "${CONFIG_DIR}/kernel-config" ]
-	then
+    rm "${TEMP}/from-running-system.config" 2>/dev/null
+
+    if [ -f "/proc/config.gz" ]; then
+	zcat /proc/config.gz > "${TEMP}/from-running-system.config" 2> /dev/null
+	logicTrue $(profile_get_key running-kernel-config) && \\
+	    profile_set_key kernel-config "${TEMP}/from-running-system.config"
+    else
+	logicTrue $(profile_get_key running-kernel-config) && \
+            die 'Error: /proc/config.gz is not found.  Running-kernel-config failed!'
+    fi
+
+    if [ -n "$(profile_get_key kernel-config)" ]; then
+	KERNEL_CONFIG="$(profile_get_key kernel-config)"
+	
+    elif [ -f "/etc/kernels/kernel-config-${KV_FULL}" ]; then
+	KERNEL_CONFIG="/etc/kernels/kernel-config-${KV_FULL}"
+
+    elif [ -f "${TEMP}/from-running-system.config" ]; then
+	KERNEL_CONFIG="${TEMP}/from-running-system.config"
+
+    elif [ -f "${CONFIG_DIR}/kernel-config-${KV_FULL}" ]; then
+	KERNEL_CONFIG="${CONFIG_DIR}/kernel-config-${KV_FULL}"
+	
+    elif [ -f "${CONFIG_DIR}/kernel-config-${KV_MAJOR}.${KV_MINOR}" ]; then
+	KERNEL_CONFIG="${CONFIG_DIR}/kernel-config-${KV_MAJOR}.${KV_MINOR}"
+	
+    elif [ -f "${CONFIG_DIR}/kernel-config" ]; then
 	KERNEL_CONFIG="${CONFIG_DIR}/kernel-config"
-	else
-		die 'Error: No kernel .config specified, or file not found!'
-	fi
+	
+    else
+	die 'Error: No kernel .config specified, or file not found!'
+    fi
 }
 
 kbuild_enabled() {

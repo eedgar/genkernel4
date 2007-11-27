@@ -282,21 +282,20 @@ all:: target
 `--[no-]initramfs`::
               Do not build a initramfs.
 
-`--[no-]install`::
-              Install or do not install the kernel/initramfs to /boot
-              after building.
+`--[no-]links`::
+              Update the "kernel", "initramfs" and "System.map"
+              symlinks to point to the newly installed kernel,
+              initramfs and System.map
 
-`--install-initramfs-path=<...>`::
-              This option specifies an installation destination for
-              the initramfs image.
+`--bootdir=<...>`::
+              Location of the boot-directory; default /boot.
 
-`--install-path=<...>`::
+`--install-to-prefix=<...>`::
               This option specifies an installation destination for
-              the initramfs image and the kernel.
-
-`--install-mod-path=<...>`::
-              This option specifies an installation destination for
-              the kernel modules.
+              the kernel, initramfs and modules.  The kernel and
+              initramfs will be placed in this prefix with the
+              `bootdir` path appended.  The modules will typically be
+              placed in the lib/ directory.
 
 `--[no-]setgroup`::
               If enabled this option modifies the grub.conf settings

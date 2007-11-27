@@ -30,15 +30,15 @@ kernel_config::()
 	then
             
 		    print_info 1 '>> Cleaning kernel source tree...'
-            print_info 1 '   Run "make mrproper" as root if this fails'
-			compile_generic mrproper
+		    print_info 1 '   Run "make mrproper" as root if this fails'
+		    compile_generic mrproper
 
             if [ -f "$(profile_get_key kernel-tree)/localversion-genkernel" ]
             then
                 rm -f "$(profile_get_key kernel-tree)/localversion-genkernel" >/dev/null 2>&1
                 if [ -f "$(profile_get_key kernel-tree)/localversion-genkernel" ]
                 then
-			        die "Could not remove localversion-genkernel from the Kernel source tree. Please remove it manually."
+		    die "Could not remove localversion-genkernel from the Kernel source tree. Please remove it manually."
                 fi
             fi
 	fi
@@ -62,38 +62,14 @@ kernel_config::()
 	then
 		print_info 1 'kernel configure: >> Running clean...' 
 		compile_generic ${KERNEL_ARGS} clean
-    fi
-
-	if logicTrue $(profile_get_key gentoo-config)
-    then
-	    determine_config_file
-		print_info 1 "${PRINT_PREFIX}Using default genkernel config from ${KERNEL_CONFIG}"
-		print_info 1 '        Previous config backed up to .config.bak'
-		cp "${KERNEL_CONFIG}" "${KBUILD_OUTPUT}/.config" ||\
-			die 'Could not copy configuration file!'
 	fi
 
-	#use the running kernel config
-	if logicTrue $(profile_get_key running-kernel-config)
-	then
-		print_info 1 "${PRINT_PREFIX}>> Getting config from the running system..."
-        if [ -f "/proc/config.gz" ]
-        then
-		    zcat /proc/config.gz > "${KBUILD_OUTPUT}/.config"
-		    [ "$?" ] || die 'Error: running-kernel-config failed!'
-        else
-            die 'Error: /proc/config.gz is not found.  Running-kernel-config failed!'
-        fi
-	fi
 	
-    # When to run oldconfig
-	if logicTrue $(profile_get_key oldconfig)
-	then
-		print_info 1 "${PRINT_PREFIX}>> Running oldconfig..."
-		yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
-		[ "$?" ] || die 'Error: oldconfig failed!'
-	fi
-	
+	determine_config_file
+	print_info 1 "${PRINT_PREFIX}Using kernel config from ${KERNEL_CONFIG}"
+	cp "${KERNEL_CONFIG}" "$(profile_get_key kbuild-output)/.config" ||\
+	    die 'Could not copy configuration file!'
+
 	if logicTrue $(profile_get_key clean)
 	then
 		print_info 1 'kernel configure: >> Running clean...' 
@@ -101,7 +77,7 @@ kernel_config::()
 	else
 		print_info 1 "${PRINT_PREFIX}--no-clean is enabled; leaving the .config alone."	
 	fi
-	
+
 	# Manual Configure
 	if logicTrue $(profile_get_key defconfig)
 	then
@@ -198,6 +174,14 @@ kernel_config::()
 	then
 		yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
 	fi
+
+
+        # Run oldconfig now... if nothing was configured at least
+        # we end up in a good state; else it won't change anything
+	print_info 1 "${PRINT_PREFIX}>> Final pass at oldconfig to make sure everything is OK..."
+	yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
+	[ "$?" ] || die 'Error: oldconfig failed!'
+
 
 	compile_generic ${KERNEL_ARGS} prepare
 	if [ "$(kernel_config_get "MODULES")" = 'yes' ]; then

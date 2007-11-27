@@ -56,7 +56,7 @@ SRCPKG_DIR="$GENKERNEL_HOME/dist"
 FIXES_FILES_DIR="$GENKERNEL_HOME/fixes/files"
 FIXES_PATCHES_DIR="$GENKERNEL_HOME/fixes/patches"
 # Read-write stuff
-CACHE_DIR="/var/tmp/genkernel-$USERNAME"
+CACHE_DIR="/var/tmp/gk-$USERNAME"
 
 if [ -f /etc/genkernel/genkernel.conf ]
 then
@@ -112,9 +112,6 @@ done
 profile_copy cmdline "user"
 
 determine_profile
-
-# We now know the profile so set default CACHE_DIR and CONFIG_DIR
-CACHE_DIR="${CACHE_DIR}/$(profile_get_key profile)"
 CONFIG_DIR="${CONFIG_DIR}/$(profile_get_key profile)"
 
 # setup the systems profile and copy it into the running profile
@@ -128,12 +125,10 @@ profile_copy "user"
 # Set TEMP
 if [ -n "$(profile_get_key tempdir)" ]; then
     TEMP="$(profile_get_key tempdir)"
-    mkdir -p "${TEMP}" || die "Could not create temporary directory '${TEMP}'!"
-    # remove the genkernel-output folder if it exists
-    rm -r ${TEMP}/genkernel-output &> /dev/null
-    [ ! -w "${TEMP}" ] die "Cannot have write access to temporary directory '${TEMP}'!"
+    mkdir -p "${TEMP}" 2>/dev/null
+    [ ! -w "${TEMP}" ] && die "Cannot have write access to temporary directory '${TEMP}'!"
 else
-    TEMP=$( mktemp -d -t genkernel.workdir.XXXXXXXXXX ) || die "Failed to create temporary directory!"
+    TEMP=$( mktemp -d -t gkwork.XXXXXXXXXX ) || die "Failed to create temporary directory!"
 fi
 
 set_color 
@@ -162,14 +157,34 @@ fi
 clear_log
 genkernel_print_header
 
+
 # FIXME: Needs to be absolute path
 mkdir -p "${CACHE_DIR}" &> /dev/null
 
 if [ ! -w "${CACHE_DIR}" ]; then
     print_warning 1 ">> CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
     CACHE_DIR="${TEMP}/genkernel_cache/$(profile_get_key profile)/"
-    mkdir -p "${CACHE_DIR}"
+    mkdir -p "${CACHE_DIR}" 2>/dev/null
+    [ ! -w "${CACHE_DIR}" ] && die "Cannot have write access to cache directory '${CACHE_DIR}'!"
 fi
+
+# Symlink dist files to the user's cache, so we can 
+# download needed files to it eventually
+mkdir -p "${CACHE_DIR}/dist" 2>/dev/null
+[ ! -w "${CACHE_DIR}/dist" ] && \
+    die "Cannot have write access to dist cache directory '${CACHE_DIR}/dist'!"
+for i in "${SRCPKG_DIR}/"*; do
+    ln -sf "${i}" "${CACHE_DIR}/dist"
+done
+SRCPKG_DIR="${CACHE_DIR}/dist"
+
+# Final cache dir is set to be profile-related
+# 
+mkdir -p "${CACHE_DIR}/$(profile_get_key profile)" 2>/dev/null
+[ ! -w "${CACHE_DIR}/$(profile_get_key profile)" ] && \
+    die "Cannot have write access to profile cache directory '${CACHE_DIR}/$(profile_get_key profile)'!"
+CACHE_DIR="${CACHE_DIR}/$(profile_get_key profile)"
+
 
 genkernel_lookup_packages
 genkernel_lookup_kernel
@@ -192,6 +207,17 @@ then
 	exit 1
 fi
 
+# Check that the install-to-prefix points to something
+# sane for the user
+if [ ! -w "$(profile_get_key install-to-prefix)" ]; then
+    print_warning 1 "Cannot write to the install-to-prefix: $(profile_get_key install-to-prefix)"
+
+    profile_set_key install-to-prefix "${CACHE_DIR}/dest"
+    mkdir "$(profile_get_key install-to-prefix)" 2>/dev/null
+    [ ! -w "$(profile_get_key install-to-prefix)" ] && die "Cannot write to the install-to-prefix: $(profile_get_key install-to-prefix)"
+    print_warning 1 "The install-to-prefix will be:"
+    print_warning 1 "   $(profile_get_key install-to-prefix)"
+fi
 
 
 # Process depends

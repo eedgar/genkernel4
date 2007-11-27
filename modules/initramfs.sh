@@ -1,9 +1,4 @@
-if logicTrue $(profile_get_key install)
-then
-	require initramfs_install
-else
-	require initramfs_create
-fi
+require initramfs_install
 
 kernel_cmdline_register 'root=/dev/ram0 real_root=/dev/$ROOT init=/linuxrc'
 kernel_cmdline_register ''
