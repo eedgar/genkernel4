@@ -11,7 +11,11 @@ function usage() {
     fi
     echo "usage: " >&2
     echo "  $script_name <kernel-tree-path> <version-tag> -- [genkernel options]" >&2
-    echo "  <version-tag> can be set to 'latest' to use the most recent tag" >&2
+    echo "  <version-tag> can be set to"
+    echo "     latest       to use the bleeding edge commit from 'origin'" >&2
+    echo "     latest-tag   to use the most recent tag" >&2
+    echo "     current      to use your git kernel tree as is" >&2
+    echo "     <tag>        to use the given tag, e.g. 'v2.6.23'" >&2
     echo "example:"
     echo "  $script_name ../linux.git latest -- --unionfs all::" >&2
     exit 1
@@ -25,17 +29,27 @@ ktree="$1"
 ktag="$2"
 [ ! -d "$ktree/.git" ] && usage "The path specified for the kernel tree is not a Git directory."
 cd "$ktree"
-if [ "$ktag" != "latest" ]; then
-    [ "$(git-tag -l ^$ktag\$)" != "$ktag" ] && usage "The specified tag does not exist in the kernel git tree"
-else
-    echo -n "Finding the latest commit... "
-    ktag=$( for i in `git-rev-parse --tags`; do git-log --pretty=format:"%ct %H" -1 $i; echo ; done | sort | cut -f2 -d' ' | tail -n1 )
-    ktag=$( git-describe "$ktag" )
-    echo $ktag
-fi
 
-echo "Checking out tag '$ktag' in the kernel tree"
-git-checkout "$ktag" || exit 1
+if [ "$ktag" = "current" ]; then
+    echo "Using the current kernel tree configuration"
+else
+
+    if [ "$ktag" = "latest" ]; then
+	ktag=master
+	echo "Checking out tag '$ktag' in the kernel tree"    
+
+    elif [ "$ktag" = "latest-tag" ]; then
+	echo -n "Finding the latest tag... "
+	ktag=$( for i in `git-rev-parse --tags`; do git-log --pretty=format:"%ct %H" -1 $i; echo ; done | sort | cut -f2 -d' ' | tail -n1 )
+	ktag=$( git-describe "$ktag" )
+	echo $ktag
+
+    else
+	git-tag -l ^$ktag\$ || usage "The specified tag '$ktag' does not exist in the kernel tree"
+	echo "Checking out tag '$ktag' in the kernel tree"    
+    fi
+    git-checkout $ktag || exit 1
+fi
 
 
 shift
