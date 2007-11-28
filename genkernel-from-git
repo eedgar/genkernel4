@@ -17,7 +17,7 @@ function usage() {
     echo "     current      to use your git kernel tree as is" >&2
     echo "     <tag>        to use the given tag, e.g. 'v2.6.23'" >&2
     echo "example:"
-    echo "  $script_name ../linux.git latest -- --unionfs all::" >&2
+    echo "  $script_name /home/abc/linux.git latest -- --menuconfig all::" >&2
     exit 1
 }
 

@@ -273,7 +273,9 @@ then
 		has "ro" "$( cat /proc/mounts | grep "${rootfs} " |  cut -f4 -d' ' )" && mode="ro"
 
 		good_msg "\t$( cat /proc/mounts | grep "${rootfs} " | cut -f1 -d' ' ) (${mode})"
-		/sbin/unionctl ${ROOTFS} --add --after 0 --mode ${mode} ${rootfs} 2> /dev/null
+                # see kernel/Documentation/filesystems/unionfs/usage.txt
+		mount -t unionfs -o remount,add=${rootfs}=${mode} ${ROOTFS}
+		# was /sbin/unionctl ${ROOTFS} --add --after 0 --mode ${mode} ${rootfs} 2> /dev/null
 		if [ "$?" != "0" ]
 		then
 			warn_msg "\t\tfailed, but continuing"
@@ -294,7 +296,9 @@ then
 	fi
 
 	# Remove the unionfs base
-	unionctl ${ROOTFS} --remove ${UNIONS}/.base
+	# see kernel/Documentation/filesystems/unionfs/usage.txt
+	mount -t unionfs -o remount,del=${UNIONS}/.base none ${ROOTFS}
+	# was unionctl ${ROOTFS} --remove ${UNIONS}/.base
 	umount ${UNIONS}/.base
 elif [ "${USE_AUFS}" = "yes" ]
 then

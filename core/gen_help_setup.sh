@@ -78,7 +78,6 @@ __register_config_option 'Initramfs' 'lvm2' 'false' 'true' 'Include LVM2 support
 __register_config_option 'Initramfs' 'e2fsprogs' 'false' 'true' 'Include e2fsprogs blkid support.'
 __register_config_option 'Initramfs' 'disklabel' 'false' 'true' 'Include disk label and uuid support in your initramfs.'
 __register_config_option 'Initramfs' 'portmap' 'false' 'true' 'Include portmap inside the initramfs.'
-__register_config_option 'Initramfs' 'unionfs' 'false' 'true' 'Unionfs is deprecated use aufs instead.'
 __register_config_option 'Initramfs' 'open-iscsi' 'false' 'true' 'Include open-iscsi inside the initramfs.'
 __register_config_option 'Initramfs' 'aoetools' 'false' 'true' 'Include aoetools inside the initramfs.'
 __register_config_option 'Initramfs' 'luks' 'false' 'true' 'Include cryptsetup-luks inside the initramfs.'
@@ -97,7 +96,7 @@ __register_config_option 'Initramfs' 'gensplash-res' 'true' 'false' 'Gensplash r
 __register_config_option 'Initramfs' 'gensplash-theme' 'true' 'false' 'Gensplash theme to include.'
 ## Catalyst Init Internals
 __register_config_option 'Initramfs' 'bladecenter' 'false' 'true' '' # Used by catalyst internally, hide option; 'Enables extra pauses for IBM Bladecenter CD boots.'
-__register_config_option 'Initramfs' 'unionfs' 'false' 'true' '' # Description empty, hide option
+
 
 ## ALL options
 __register_config_option '"all::" target' 'initramfs' 'false' 'true' 'Build a initramfs'

@@ -6,7 +6,6 @@ logicTrue $(profile_get_key lvm2) && require lvm2
 logicTrue $(profile_get_key e2fsprogs) && require e2fsprogs
 logicTrue $(profile_get_key gensplash) && require gensplash
 logicTrue $(profile_get_key portmap) && require portmap
-logicTrue $(profile_get_key unionfs) && require unionfs
 logicTrue $(profile_get_key dmraid) && require dmraid
 logicTrue $(profile_get_key open-iscsi) && require open_iscsi
 logicTrue $(profile_get_key aoetools) && require aoetools

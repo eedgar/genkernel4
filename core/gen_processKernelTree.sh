@@ -6,55 +6,58 @@
 # License: GPLv2
 
 get_KV() {
-	KNAME="$(profile_get_key kernel-name)"
-	
-	KERNEL_DIR="$1"
-	[ ! -e "$1/Makefile" ] && die "Kernel source tree '$KERNEL_DIR' invalid, no Makefile found!"
-
-	if [ -n "$(profile_get_key kbuild-output)" ]
-	then
-		KBUILD_OUTPUT="$(profile_get_key kbuild-output)"
-	else
-		KBUILD_OUTPUT="${CACHE_DIR}/kbuild_output"
-		mkdir -p ${KBUILD_OUTPUT}
-	fi
-
-	[ ! -w ${KBUILD_OUTPUT} ] && "Could not write to ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
-		
-	profile_set_key kbuild-output ${KBUILD_OUTPUT}
+    KNAME="$(profile_get_key kernel-name)"
     
-	if [ -f "$(profile_get_key kbuild-output)/localversion-genkernel" ]
+    KERNEL_DIR="$1"
+    [ ! -e "$1/Makefile" ] && die "Kernel source tree '$KERNEL_DIR' invalid, no Makefile found!"
+    
+    # that's some side effect... and should probably be somewhere else
+    # ...
+    if [ -n "$(profile_get_key kbuild-output)" ]
+    then
+	KBUILD_OUTPUT="$(profile_get_key kbuild-output)"
+    else
+	KBUILD_OUTPUT="${CACHE_DIR}/kbuild_output"
+	mkdir -p ${KBUILD_OUTPUT}
+    fi
+    
+    [ ! -w ${KBUILD_OUTPUT} ] && "Could not write to ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
+    
+    profile_set_key kbuild-output ${KBUILD_OUTPUT}
+    # ...
+    # end 'side effect'
+    
+    if [ -f "$(profile_get_key kbuild-output)/localversion-genkernel" ]
+    then
+	version_string=$(cat $(profile_get_key kbuild-output)/localversion-genkernel)
+    fi
+    
+    if [ "${version_string}" != "-${KNAME}-${ARCH}" ]
+    then
+	if [ "${KNAME}" != 'do-not-set' ]
 	then
-		version_string=$(cat $(profile_get_key kbuild-output)/localversion-genkernel)
+	    echo "-${KNAME}-${ARCH}" > "$(profile_get_key kbuild-output)/localversion-genkernel" || die "No permissions to write to $(profile_get_key kbuild-output)/localversion-genkernel"
+	else
+	    rm "$(profile_get_key kbuild-output)/localversion-genkernel" 2>/dev/null
 	fi
-
-	if [ "${version_string}" != "-${KNAME}-${ARCH}" ]
-	then
-		if [ "${KNAME}" != 'do-not-set' ]
-		then
-			echo "-${KNAME}-${ARCH}" > "$(profile_get_key kbuild-output)/localversion-genkernel" || die "No permissions to write to $(profile_get_key kbuild-output)/localversion-genkernel"
-		else
-			rm "$(profile_get_key kbuild-output)/localversion-genkernel" 2>/dev/null
-		fi
-	fi
-	
-	# Configure the kernel
-
-	KV_MAJOR=`grep ^VERSION\ \= ${KERNEL_DIR}/Makefile | awk '{ print $3 };'`
-	KV_MINOR=`grep ^PATCHLEVEL\ \= ${KERNEL_DIR}/Makefile | awk '{ print $3 };'`
-	KV_PATCH=`grep ^SUBLEVEL\ \= ${KERNEL_DIR}/Makefile | awk '{ print $3 };'`
-
+    fi
+    
+    # Configure the kernel
+    KV_MAJOR=`grep ^VERSION\ \= ${KERNEL_DIR}/Makefile | awk '{ print $3 };'`
+    KV_MINOR=`grep ^PATCHLEVEL\ \= ${KERNEL_DIR}/Makefile | awk '{ print $3 };'`
+    KV_PATCH=`grep ^SUBLEVEL\ \= ${KERNEL_DIR}/Makefile | awk '{ print $3 };'`
+    
     if [ -z "${KV_PATCH}" ]
     then
         die "Error in kernel tree.  Kernel Patch Level could not be found."
     fi
     
-	KV_CODE="$(linux_kv_to_code ${KV_MAJOR} ${KV_MINOR} ${KV_PATCH})"
-	KV_EXTRA=`grep ^EXTRAVERSION\ \= ${KERNEL_DIR}/Makefile | sed -e "s/EXTRAVERSION =//" -e "s/ //g" -e 's/\$([a-z]*)//gi'`
-	KV_LOCAL=""
-
-	# Local version
-	local myLookup myList
+    KV_CODE="$(linux_kv_to_code ${KV_MAJOR} ${KV_MINOR} ${KV_PATCH})"
+    KV_EXTRA=`grep ^EXTRAVERSION\ \= ${KERNEL_DIR}/Makefile | sed -e "s/EXTRAVERSION =//" -e "s/ //g" -e 's/\$([a-z]*)//gi'`
+    KV_LOCAL=""
+	
+    # Local version
+    local myLookup myList
 
 #[[ -e "${KERNEL_DIR}/localversion" ]] && myList='localversion'
 #
@@ -74,30 +77,29 @@ get_KV() {
 #		fi
 #	done
 
-	if [ -f ${KBUILD_OUTPUT}/.config ]
-	then
-		myLookup="$(get_extconfig_var ${KBUILD_OUTPUT}/.config CONFIG_LOCALVERSION)"
-		[ "${myLookup}" != '%lookup_fail%' ] && KV_LOCAL="${KV_LOCAL}${myLookup}"
-	fi
+    if [ -f ${KBUILD_OUTPUT}/.config ]
+    then
+	myLookup="$(get_extconfig_var ${KBUILD_OUTPUT}/.config CONFIG_LOCALVERSION)"
+	[ "${myLookup}" != '%lookup_fail%' ] && KV_LOCAL="${KV_LOCAL}${myLookup}"
+    fi
 	
-	KV_LOCAL="${KV_LOCAL// /}"
-	
-	if [ -f ${KBUILD_OUTPUT}/include/linux/utsrelease.h ]
-	then
-		UTS_RELEASE=`grep UTS_RELEASE ${KBUILD_OUTPUT}/include/linux/utsrelease.h | sed -e 's/#define UTS_RELEASE "\(.*\)"/\1/'`
-		KV_LOCAL=`echo ${UTS_RELEASE}|sed -e "s/${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}//"`
-	elif [ -f ${KBUILD_OUTPUT}/include/linux/version.h ]
-	then
-		UTS_RELEASE=`grep UTS_RELEASE ${KBUILD_OUTPUT}/include/linux/version.h | sed -e 's/#define UTS_RELEASE "\(.*\)"/\1/'`
-		KV_LOCAL=`echo ${UTS_RELEASE}|sed -e "s/${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}//"`
-	fi
-	
-	if [ "${KV_MINOR}" -lt '6' -a "${KV_MAJOR}" -eq '2' ]
-	then
-		die 'Kernel unsupported (2.6 or newer needed); exiting.'
-	fi
-
-	KV_FULL="${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}${KV_LOCAL}"
+    KV_LOCAL="${KV_LOCAL// /}"
+    if [ -f ${KBUILD_OUTPUT}/include/linux/utsrelease.h ]
+    then
+	UTS_RELEASE=`grep UTS_RELEASE ${KBUILD_OUTPUT}/include/linux/utsrelease.h | sed -e 's/#define UTS_RELEASE "\(.*\)"/\1/'`
+	KV_LOCAL=`echo ${UTS_RELEASE}|sed -e "s/${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}//"`
+    elif [ -f ${KBUILD_OUTPUT}/include/linux/version.h ]
+    then
+	UTS_RELEASE=`grep UTS_RELEASE ${KBUILD_OUTPUT}/include/linux/version.h | sed -e 's/#define UTS_RELEASE "\(.*\)"/\1/'`
+	KV_LOCAL=`echo ${UTS_RELEASE}|sed -e "s/${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}//"`
+    fi
+    
+    if [ "${KV_MINOR}" -lt '6' -a "${KV_MAJOR}" -eq '2' ]
+    then
+	die 'Kernel unsupported (2.6 or newer needed); exiting.'
+    fi
+    
+    KV_FULL="${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}${KV_EXTRA}${KV_LOCAL}"
 }
 
 genkernel_lookup_kernel() {

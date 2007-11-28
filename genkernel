@@ -209,6 +209,7 @@ fi
 
 # Check that the install-to-prefix points to something
 # sane for the user
+mkdir "$(profile_get_key install-to-prefix)" 2>/dev/null
 if [ ! -w "$(profile_get_key install-to-prefix)" ]; then
     print_warning 1 "Cannot write to the install-to-prefix: $(profile_get_key install-to-prefix)"
 

@@ -1,5 +1,8 @@
 mount_boot::()
 {
+        test "$(id -u)" != "0" && return 
+
+
 	local BOOTDIR
 	BOOTDIR="$(profile_get_key bootdir)"
 

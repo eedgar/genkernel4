@@ -17,21 +17,27 @@ kernel_config::()
 	#else
 	#	check_asm_link_ok ${ARCH} || die "Bad asm link.  The output directory has already been configured for a different arch"
 	#fi
-	
+
 	cd $(profile_get_key kernel-tree)
-	
+
 	# Make a backup of the config if we are going to clean
 	logicTrue $(profile_get_key clean) && cp $(profile_get_key kbuild-output)/.config \
 		$(profile_get_key kbuild-output)/.config.genkernel_backup > /dev/null 2>&1
 
 	# CLEAN
 	# Source dir needs to be clean or kbuild complains
-	if [ ! "$(profile_get_key kbuild-output)" == "$(profile_get_key kernel-tree)" ]
+	if [ "$(profile_get_key kbuild-output)" != "$(profile_get_key kernel-tree)" ]
 	then
+
+	    print_info 1 '>> Cleaning kernel source tree...'
+	    print_info 1 '   Run "make mrproper" as root if this fails'
+	    compile_generic mrproper
             
-		    print_info 1 '>> Cleaning kernel source tree...'
-		    print_info 1 '   Run "make mrproper" as root if this fails'
-		    compile_generic mrproper
+	    # Mismatched kbuild_outputs and kernel source trees give errors
+	    if ! cat ${KBUILD_OUTPUT}/include/config/kernel.release 2>/dev/null | egrep "^${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}" 2>/dev/null; then
+		print_info 1 "Cleaning kbuild_output to build a new kernel version"
+		rm -rf ${KBUILD_OUTPUT}/*
+	    fi
 
             if [ -f "$(profile_get_key kernel-tree)/localversion-genkernel" ]
             then
@@ -46,7 +52,7 @@ kernel_config::()
 	logicTrue $(profile_get_key mrproper) && \
 		print_info 1 '>> Running mrproper...' && \
 			compile_generic ${KERNEL_ARGS} mrproper
-	
+
 	# Setup fake i386 kbuild_output for arch=um or xen0 or xenU 
 	# Some proggies need a i386 configured kernel tree
 	if [ 	"$(profile_get_key arch)" == "um" ]
@@ -182,7 +188,6 @@ kernel_config::()
 	yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
 	[ "$?" ] || die 'Error: oldconfig failed!'
 
-
 	compile_generic ${KERNEL_ARGS} prepare
 	if [ "$(kernel_config_get "MODULES")" = 'yes' ]; then
 		compile_generic ${KERNEL_ARGS} modules_prepare
@@ -198,5 +203,5 @@ kernel_config::()
 	unset KV_FULL
 	get_KV $(profile_get_key kernel-tree)
 	cd $(profile_get_key kbuild-output)
-    genkernel_generate_package "kernel-config-${KV_FULL}" ".config"
+	genkernel_generate_package "kernel-config-${KV_FULL}" ".config"
 }
