@@ -19,9 +19,10 @@ kernel_modules_install::()
 	# install the modules
 	print_info 1 '>> Installing kernel modules ...'
 	compile_generic ${KERNEL_ARGS} modules_install
-    fi
 
-    print_info 1 "Kernel modules installed in ${BOLD}${INSTO}${NORMAL}"
-    cd "${INSTO}"
-    print_info 1 "$(du -sch --no-dereference lib | tail -n1)"
+	print_info 1 "Kernel modules installed in ${BOLD}${INSTO}${NORMAL}"
+	cd "${INSTO}"
+	print_info 1 "$(du -sch --no-dereference lib | tail -n1)"
+
+    fi
 }
