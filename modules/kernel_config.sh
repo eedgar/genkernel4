@@ -150,6 +150,12 @@ kernel_config::()
 	fi
 
 
+        # Run oldconfig now... if nothing was configured at least
+        # we end up in a good state; else it won't change anything
+	print_info 1 "${PRINT_PREFIX}>> Final pass at oldconfig to make sure everything is OK..."
+	yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
+	[ "$?" ] || die 'Error: oldconfig failed!'
+
 	# Turn on things that have to be on below ... 	
 
 	# Set the initramfs_source string if building an internal initramfs.
@@ -180,13 +186,6 @@ kernel_config::()
 	then
 		yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
 	fi
-
-
-        # Run oldconfig now... if nothing was configured at least
-        # we end up in a good state; else it won't change anything
-	print_info 1 "${PRINT_PREFIX}>> Final pass at oldconfig to make sure everything is OK..."
-	yes '' 2>/dev/null | compile_generic ${KERNEL_ARGS} oldconfig
-	[ "$?" ] || die 'Error: oldconfig failed!'
 
 	compile_generic ${KERNEL_ARGS} prepare
 	if [ "$(kernel_config_get "MODULES")" = 'yes' ]; then

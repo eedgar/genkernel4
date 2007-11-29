@@ -26,6 +26,8 @@ RESOLV_CONF="/etc/resolv.conf"
 
 case "${1}" in
 	renew|bound )
+	        good_msg "Network configured :"
+		good_msg "   ${interface} ${ip} ${BROADCAST} ${NETMASK}"
 		/sbin/ifconfig ${interface} ${ip} ${BROADCAST} ${NETMASK}
 
 		if [ -n "${router}" ]
@@ -47,6 +49,7 @@ case "${1}" in
 		do
 			dbg_msg adding dns ${entry}
 			echo nameserver ${entry} >> ${RESOLV_CONF}
+			good_msg "  dns ${entry}"
 		done
 
 		# Save info for later use. This allows for multiple interfaces because
@@ -57,6 +60,7 @@ case "${1}" in
 		if [ -n "${domain}" ]
 		then
 			echo "domain=\"${domain}\"" >> ${initrd_defaults}
+			good_msg "  domain ${domain}"
 		fi
 
 		# For diskless NFS clients
@@ -72,6 +76,7 @@ case "${1}" in
 				then
 					nfsserver="$x"
 					echo "nfsserver=\"${nfsserver}\"" >> ${initrd_defaults}
+					good_msg "  nfsserver ${nfsserver}"
 				fi
 			fi
 		fi

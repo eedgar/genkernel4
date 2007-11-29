@@ -3,7 +3,12 @@ Things to fix:
 * Put up an http://genkernel.org/dist/ repository, and auto-download
   the needed files to local cache if needed
 
-* cmdline kernel config parameter changing
+* Use "make kernelversion" in the kernel tree to determine the kernel version safely
+  (replace the grep/sed/blah version checking with that)
+
+* Fix the "create kbuild_output" side effect of get_KV()
+
+* cmdline kernel config parameter changing (what? jf)
 
 * make some functions more generic .. ( not necessary right away but would be nice to get done )
 
@@ -12,8 +17,13 @@ Things to fix:
 
 * --list-module-groups for gmi
 
-gmi: We need modules in the sense that you can just add an overlay and the
-     initramfs scripts will pick up the .sh and run it.
+* gmi: We need modules in the sense that you can just add an overlay
+  and the initramfs scripts will pick up the .sh and run it.  
+
+  Perhaps some "preroot" and "postroot" directories, containing
+  scripts that get executed before the mounting and, well, after
+  Dropping scripts there would ensure execution.  What about the
+  execution order?
 
 busybox: fix config (add --busybox-networking opt or something)
 
@@ -23,7 +33,6 @@ kernel modules --no doesnt work
 
 * reduce --help indentation to make things more readable
 * --help should go to stderr
-* udhcp.sh should print out IP address received and such
 * console=ttyS0,9600 goes kaboom
 
 when you don't have a kernel driver and you ip=dhcp <-- it should say no
