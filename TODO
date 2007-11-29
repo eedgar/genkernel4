@@ -3,9 +3,6 @@ Things to fix:
 * Put up an http://genkernel.org/dist/ repository, and auto-download
   the needed files to local cache if needed
 
-* clean the kbuild_output if the kernel version of the new compile is different
-  from the one that was built in the kbuild_output last time
-
 * cmdline kernel config parameter changing
 
 * make some functions more generic .. ( not necessary right away but would be nice to get done )
