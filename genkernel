@@ -17,12 +17,14 @@ die() {
 # Autodetect genkernel home if its not set as an env variable
 PATH="${PATH} $(dirname $0 2>/dev/null)"
 
-if which genkernel 2>/dev/null; then
-    gkpath="$(which genkernel)"
+which genkernel 2>/dev/null 1>/dev/null
+if [ $? == 0 ]; then
+    gkpath="$(which genkernel 2>/dev/null)"
     PATH="${PATH} $( dirname '${gkpath}' 2>/dev/null )"
 
     # is it a link pointing to the real gk_home?
-    if readlink "${gkpath}" 2>/dev/null; then
+    readlink "${gkpath}" 2>/dev/null 1>/dev/null
+    if [ $? == 0 ]; then
 	gkpath=$( readlink "${gkpath}" 2>/dev/null )
 	PATH="${PATH} $( dirname '${gkpath}' 2>/dev/null )"
     fi
@@ -56,7 +58,7 @@ SRCPKG_DIR="$GENKERNEL_HOME/dist"
 FIXES_FILES_DIR="$GENKERNEL_HOME/fixes/files"
 FIXES_PATCHES_DIR="$GENKERNEL_HOME/fixes/patches"
 # Read-write stuff
-CACHE_DIR="/var/tmp/gk-$USERNAME"
+CACHE_DIR="/var/tmp/gk-`whoami`"
 
 
 if [ -f /etc/genkernel/genkernel.conf ]
