@@ -10,7 +10,7 @@ uclibc_stage1_compile::()
 	#local   UCLIBC_DIR="uClibc" 
 	[ -f "${UCLIBC_SRCTAR}" ] || die "Could not find uclibc source tarball: ${UCLIBC_SRCTAR}!"
 
-	cd "${TEMP}"
+	cd "${CACHE_DIR}"
 	rm -rf ${UCLIBC_DIR} > /dev/null
 	unpack ${UCLIBC_SRCTAR} || die 'Could not extract uclibc source tarball!'
 	[ -d "${UCLIBC_DIR}" ] || die 'uclibc directory ${UCLIBC_DIR} is invalid!'
@@ -56,12 +56,12 @@ uclibc_stage1_compile::()
 	fi
 
 
-    config_set_string .config CROSS_COMPILER_PREFIX "${TEMP}/staging/bin/${UCLIBC_TARGET_ARCH}-linux-uclibc-"
+    config_set_string .config CROSS_COMPILER_PREFIX "${CACHE_DIR}/staging/bin/${UCLIBC_TARGET_ARCH}-linux-uclibc-"
 	config_set .config TARGET_${UCLIBC_TARGET_ARCH} "y"
 	config_set_string .config TARGET_ARCH "${UCLIBC_TARGET_ARCH}"
 	config_set .config UCLIBC_HAS_RPC "y"
 	config_set .config UCLIBC_HAS_FULL_RPC "y"
-	config_set_string .config KERNEL_SOURCE "${TEMP}/staging/usr/${UCLIBC_TARGET_ARCH}-linux-uclibc/usr/"
+	config_set_string .config KERNEL_SOURCE "${CACHE_DIR}/staging/usr/"
 	config_unset .config RUNTIME_PREFIX
 	config_set_string .config DEVEL_PREFIX "/usr/"
 	config_set_string .config SHARED_LIB_LOADER_PREFIX "/lib/"
@@ -71,13 +71,6 @@ uclibc_stage1_compile::()
     echo "UCLIBC_HAS_FULL_RPC=y" >> .config
     echo "PTHREADS_DEBUG_SUPPORT=y" >> .config
 
-	# If headers are a quickpkg of linux-headers then move them into the right place...
-	if [ -e "${TEMP}/staging/usr/include" ]
-	then
-		mkdir "${TEMP}/staging/usr/${UCLIBC_TARGET_ARCH}-linux-uclibc/usr" -p
-		mv "${TEMP}/staging/usr/include" "${TEMP}/staging/usr/${UCLIBC_TARGET_ARCH}-linux-uclibc/usr"
-	fi
-	
 	if [ -n "${UCLIBC_TARGET_ENDIAN}" ]
 	then
 		config_set .config ARCH_${UCLIBC_TARGET_ENDIAN}_ENDIAN "y"
@@ -87,20 +80,20 @@ uclibc_stage1_compile::()
 	yes '' 2>/dev/null | compile_generic oldconfig
 
 	print_info 1 'uClibc: >> Compiling...'
-	mkdir -p ${TEMP}/staging/lib
-	mkdir -p ${TEMP}/staging/usr/lib
+	mkdir -p ${CACHE_DIR}/staging/lib
+	mkdir -p ${CACHE_DIR}/staging/usr/lib
 
 	compile_generic \
-	PREFIX=${TEMP}/staging \
+	PREFIX=${CACHE_DIR}/staging \
 	DEVEL_PREFIX=/usr/ \
-	RUNTIME_PREFIX=${TEMP}/staging \
+	RUNTIME_PREFIX=${CACHE_DIR}/staging \
 	HOSTCC="CC" \
 	pregen install_dev
 	
-	cd ${TEMP}/staging
+	cd ${CACHE_DIR}/staging
 	genkernel_generate_package "uClibc-stage1-${UCLIBC_VER}" "."
 
-	cd "${TEMP}"
+	cd "${CACHE_DIR}"
 	rm -rf "${UCLIBC_DIR}" > /dev/null
-	rm -rf "${TEMP}/staging" > /dev/null
+	#rm -rf "${TEMP}/staging" > /dev/null
 }

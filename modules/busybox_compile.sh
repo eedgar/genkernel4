@@ -39,8 +39,9 @@ busybox_compile::()
 	[ -d "${BUSYBOX_DIR}" ] || die 'Busybox directory ${BUSYBOX_DIR} is invalid!'
 	cd "${BUSYBOX_DIR}" > /dev/null
 	gen_patch ${FIXES_PATCHES_DIR}/busybox/${BUSYBOX_VER} .
-	cp "${BUSYBOX_CONFIG}" .config
+	#cp "${BUSYBOX_CONFIG}" .config
    
+	yes '' 2>/dev/null | compile_generic oldconfig
 	print_info 1 'busybox: >> Configuring...'
 	if logicTrue $(profile_get_key busybox-menuconfig)
 	then
@@ -84,7 +85,7 @@ busybox_compile::()
 	fi
 	
 	yes '' 2>/dev/null | compile_generic oldconfig
-	
+    more .config
 	print_info 1 'busybox: >> Compiling...'
 	compile_generic all
     # No need to strip output the Makefile already does it.

@@ -166,10 +166,7 @@ test -n "$(profile_get_key cachedir)" && CACHE_DIR="$(profile_get_key cachedir)"
 mkdir -p "${CACHE_DIR}" &> /dev/null
 
 if [ ! -w "${CACHE_DIR}" ]; then
-    print_warning 1 ">> CACHE_DIR: ${BOLD}${CACHE_DIR} ${NORMAL}is not writeable; attempting to use ${TEMP}/genkernel_cache/$(profile_get_key profile)"
-    CACHE_DIR="${TEMP}/genkernel_cache/$(profile_get_key profile)/"
-    mkdir -p "${CACHE_DIR}" 2>/dev/null
-    [ ! -w "${CACHE_DIR}" ] && die "Cannot have write access to cache directory '${CACHE_DIR}'!"
+    die "Cannot have write access to cache directory '${CACHE_DIR}'!"
 fi
 
 # Symlink dist files to the user's cache, so we can 
