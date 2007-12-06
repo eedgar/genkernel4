@@ -165,20 +165,15 @@ kernel_config::()
 	# So, if this is not empty, then a initramfs is set.
 	if logicTrue $(internal_initramfs)
 	then
-	        if [ "$(kernel_config_get "INITRAMFS_SOURCE")" == "\"\"" ]; then
-			kernel_config_set_string "INITRAMFS_SOURCE" "${TEMP}/initramfs-internal ${TEMP}/initramfs-internal.devices"
-			kernel_config_set_raw "INITRAMFS_ROOT_UID" 0
-			kernel_config_set_raw "INITRAMFS_ROOT_GID" 0
-			UPDATED_KERNEL=true
-		fi
+	    kernel_config_set_string "INITRAMFS_SOURCE" "${TEMP}/initramfs-internal/ ${TEMP}/initramfs-internal.devices"
+	    kernel_config_set_raw "INITRAMFS_ROOT_UID" 0
+	    kernel_config_set_raw "INITRAMFS_ROOT_GID" 0
+	    UPDATED_KERNEL=true
 	else
-		if [ "$(kernel_config_get "INITRAMFS_SOURCE")" != "\"\"" ]; then
-		    echo "printbl"
-			kernel_config_unset "INITRAMFS_SOURCE"
-			kernel_config_unset "INITRAMFS_ROOT_UID"
-			kernel_config_unset "INITRAMFS_ROOT_GID"
-			UPDATED_KERNEL=true
-		fi
+	    kernel_config_unset "INITRAMFS_SOURCE"
+	    kernel_config_unset "INITRAMFS_ROOT_UID"
+	    kernel_config_unset "INITRAMFS_ROOT_GID"
+	    UPDATED_KERNEL=true
 	fi
 
 	# Sets UPDATED_KERNEL to true if any config options are not defined

@@ -80,8 +80,6 @@ load_modules() {
 
 # Loads and start UnionFS, create appropriate directories as needed
 #
-# Use setup_unionfsalike, not this function directly.
-#
 # (No parameters)
 #
 setup_unionfs() {
@@ -90,7 +88,6 @@ setup_unionfs() {
 		local module_location
 		[ -d /lib/modules ] && module_location=$(find /lib/modules -name unionfs.ko)
 		grep -qs 'unionfs' /proc/filesystems
-
 		if [ -n "${module_location}" -o "$?" = 0 ]
 		then
 			good_msg "Enabling UnionFS support"
@@ -100,29 +97,12 @@ setup_unionfs() {
 			mount -t tmpfs tmpfs ${UNIONS}/.base
 			mount -t unionfs -o dirs=${UNIONS}/.base=rw unionfs ${ROOTFS}
 			USE_UNIONFS="yes"
-			USE_UNIONFSALIKE="yes"
 		else
 			dbg_msg "The unionfs.ko module does not exist, unionfs disabled."
 		fi
 	fi
 }
 
-# Loads and start UnionFS, create appropriate directories as needed
-#
-# (No parameters)
-#
-setup_unionfsalike() {
-	# Use aufs if available; otherwise let's try unionfs
-	grep -qs 'aufs' /proc/filesystems
-	if [ "$?" -eq 0 ]
-	then
-		good_msg "Enabling aufs support"
-		USE_AUFS="yes"
-		USE_UNIONFSALIKE="yes"
-	else
-		setup_unionfs
-	fi
-}
 
 # Detect SBP-2 devices
 #

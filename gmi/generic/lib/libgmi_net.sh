@@ -43,8 +43,12 @@ setup_networking() {
 			then
 				good_msg "Setting up networking on ${ethdev} (${autoconf})"
 				chmod +x ${LIBGMI}/udhcp.sh # Make sure udhcpc can execute the script
-				/sbin/udhcpc --now -i ${ethdev} -s ${LIBGMI}/udhcp.sh > /dev/null
-				assert "$?" "\t'ip=${IP}' setup failed" || return 1
+
+				if /sbin/udhcpc --now -i ${ethdev} -s ${LIBGMI}/udhcp.sh \
+				    | grep "FATAL"; then
+
+				    assert "$?" "\t'ip=${IP}' setup failed" || return 1
+				fi
 			fi
 
 		elif [ "${autoconf}" = "bootp" -o "${autoconf}" = "rarp" ]

@@ -133,7 +133,7 @@ do
 	then
 		echo
 		bad_msg "Please specify a valid real_root parameter to boot, 'help' or 'shell' ..."
-		if [ "${USE_UNIONFSALIKE}" = "yes" ]
+		if [ "${USE_UNIONFS}" = "yes" ]
 		then
 			# We already started unionizing... shall we add something else?
 			bad_msg "If some filesystems were already mounted sucessfully, add the ones you "
@@ -196,7 +196,7 @@ do
 	# If unionfs is needed by a ';' stacking, enable it.
 	if echo ${REAL_ROOT} | grep ";" > /dev/null
 	then
-		setup_unionfsalike
+		setup_unionfs
 	fi
 
 	dbg_msg "REAL_ROOT=${REAL_ROOT}"
@@ -238,7 +238,7 @@ do
 
 			got_good_root="yes"
 
-			if [ "${USE_UNIONFSALIKE}" = "yes" ]
+			if [ "${USE_UNIONFS}" = "yes" ]
 			then
 				dbg_msg "Recorded ${mountpoint} as a union, will insert later"
 			else
@@ -274,7 +274,7 @@ then
 
 		good_msg "\t$( cat /proc/mounts | grep "${rootfs} " | cut -f1 -d' ' ) (${mode})"
                 # see kernel/Documentation/filesystems/unionfs/usage.txt
-		mount -t unionfs -o remount,add=${rootfs}=${mode} ${ROOTFS}
+		mount -t unionfs -o remount,add=${rootfs} none ${ROOTFS}
 		# was /sbin/unionctl ${ROOTFS} --add --after 0 --mode ${mode} ${rootfs} 2> /dev/null
 		if [ "$?" != "0" ]
 		then
