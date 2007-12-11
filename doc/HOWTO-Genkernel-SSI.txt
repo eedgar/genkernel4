@@ -52,7 +52,7 @@ Here, we tell the server to export the whole `/` to SSI nodes (here
 only `node01`).  Also, we have a special directory (the
 'diff-overlay'), `/var/state/systems/node01` that will contain all
 node-specific files, so that the configuration of nodes can be
-slightly different than the one from the server (think of `/etc/fstab`
+slightly different from the one from the server (think of `/etc/fstab`
 for example).  We will explain how to set up those differences in a
 following section.
 
@@ -87,7 +87,7 @@ So how to we mask the bottom-most layer?  Simply by creating a
 `/etc/fstab` file in the 'diff-overlay' (which will be, in our
 nomenclature, `/var/state/systems/node01/etc/fstab`).
 
-This scheme is the same for every file that needs to be different than
+This scheme is the same for every file that needs to be different from
 the server's one on a given node.
 
 DHCP Server, TFTP and PXE setup
@@ -107,40 +107,44 @@ Kernel
 ------
 
 The nodes' kernel does not need any specific configuration, but to be
-able to mount an NFS share.  You must enable 'NFS client' options.
+able to mount an NFS share and make unions.  You must enable 'NFS
+client' options and add support for UnionFS (for convenience, you can
+use the UnionFS Git trees, available on http://git.kernel.org[]).
 
-You may use Genkernel to build the kernel, it may simplify things for
-you.
+You can then use Genkernel to build the kernel with an embedded GMI
+initramfs:
 
 ---------------------------------
-# genkernel --menuconfig kernel::
+$ ./genkernel \
+    --kernel-tree=/home/richard/code/unionfs-ezk/ \
+    --install-to-prefix=/home/richard/gkoutput \
+    --internal-initramfs \
+    all::
 ---------------------------------
-
-
-Genkernel's initramfs
----------------------
-
-To support the union of the two NFS directories, you must build an
-initramfs with genkernel, using the following options :
-
----------------------------------------------
-# genkernel --unionfs [otheropts] initramfs::
----------------------------------------------
 
 We suggest building an initramfs with DNS support built-in so you can
 resolve the hostnames of the NFS servers.  If you don't, you can
-simply use direct IP addresses.  To have DNS support, you will need to
-include uClibc in the initramfs (which takes longer to compile and
-gives a bigger initramfs).  Use the following genkernel options:
+simply use direct IP addresses when specifying the mount options.  To
+have DNS support, you will need to include uClibc in the initramfs
+(which takes longer to compile and gives a bigger initramfs).  Use the
+following genkernel options:
 
----------------------------------------------------------------
-# genkernel --unionfs --internal-uclibc [otheropts] initramfs::
----------------------------------------------------------------
+---------------------------------
+$ ./genkernel \
+    --kernel-tree=/home/richard/code/unionfs-ezk/ \
+    --install-to-prefix=/home/richard/gkoutput \
+    --internal-initramfs \
+    --internal-uclibc \
+    all::
+---------------------------------
 
-Now that the initramfs is built, you need to tell PXELINUX to load it,
-and to pass a `root=` directive that will union-mount the server's `/`
-and the 'diff-overlay'.  For example, you may have such a
-`pxelinux.cfg/default` file (refer to
+Genkernel's GMI initramfs
+-------------------------
+
+Now that the kernel + initramfs bundle is built, you need to tell
+PXELINUX to load it, and to pass a `root=` directive that will
+union-mount the server's `/` and the 'diff-overlay'.  For example, you
+may have such a `pxelinux.cfg/default` file (refer to
 http://www.gentoo.org/doc/en/diskless-howto.xml[Diskless Nodes with
 Gentoo] guide).
 
@@ -194,24 +198,17 @@ homepage] for more information.
 Notes, ideas
 ------------
 
-Single kernel and initramfs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Single kernel and initramfs for all systems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You may well use the same kernel and initramfs for both booting the
 server and the nodes.  The only things that needs to be different are
-the boot parameters.  Given that, you can simply issue the following
-command to build the kernel and initramfs in a single step:
-
-----------------------------------------------------------------------
-# genkernel --unionfs --internal-uclibc --menuconfig [otheropts] all::
-----------------------------------------------------------------------
-
-This will build everything needed.  Make sure that you have NFS server
-and NFS client support in the kernel.
+the boot parameters.  Again, make sure that you have NFS server and
+NFS client support in the kernel, and of course UnionFS support.
 
 
-More than two overlays and non-invasive testing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+More overlays and non-invasive testing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You may also use more than one NFS overlay, or even mix and match the
 NFS root with other types of overlays, such as a read-write tmpfs, to
@@ -247,7 +244,7 @@ to:
 - Export that NFS share to the nodes;
 - Have the nodes mount it as their root filesystem.
 
-It simply means having a similar `/etc/exports` file on the server
+It simply means having sucn a `/etc/exports` file on the server
 system:
 
 -----------------------------------------------------------------

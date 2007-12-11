@@ -387,7 +387,7 @@ fi
 # Clean up env
 unset DEBUG
 unset USE_UNIONFS
-verbose_kmsg 
+verbose_kmsg
 
 # Make sure we are in the root before the switch_root command is called
 cd /
