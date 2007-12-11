@@ -8,7 +8,7 @@ Things to fix:
 
 * Fix the "create kbuild_output" side effect of get_KV()
 
-* cmdline kernel config parameter changing (what? jf)
+* Specify kernel config options on the genkernel cmdline
 
 * make some functions more generic .. ( not necessary right away but would be nice to get done )
 
@@ -46,3 +46,6 @@ the print_info command is going to need some work too
     -> mknod fails as a regular user. :/
     look into gen_init_cpio or cpio --append to see if we cant work around
     the dev node issues.
+
+    maybe run the "gen_init_cpio" binary from the kernel source tree, then use
+    a "nod bla\ndir bla"-style file?
