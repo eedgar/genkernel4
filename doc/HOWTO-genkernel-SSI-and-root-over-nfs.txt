@@ -1,25 +1,28 @@
-HOWTO Simple NFS Single System Image with Genkernel 4
-=====================================================
+HOWTO genkernel SFI and root-over-nfs
+=====================================
 v0.1, Jean-Francois Richard <jean-francois@richard.name>
 
 /////////////////////////////////////////////
 Very drafty, my english needs some review...
 /////////////////////////////////////////////
 
-Single System Image (SSI) setups are, put simply, the sharing of a
-single root (`/`) filesystem by multiple systems.
+This document explains how to set up a Single Filesystem Image (SFI)
+system using genkernel 4 and Gentoo GNU/Linux.  This setup shares many
+similarities with the more well-known `root-over-nfs` scheme, but is
+based on sharing the same `/` by multiple machines.  Even though we
+discuss the SFI case here, most concepts can apply to a more general
+`root-over-nfs` scenario.
 
-This kind of system has the advantage of being very easily
-maintainable, since you must only have one set of packages to install,
-on only one server, to have it available on each and every SSI node
-connected, instantly.
+SFI systems have the advantage of being very easily maintainable,
+since one must install only one set of packages, on only one server,
+to have it available on each and every SSI node connected, instantly.
 
 The setup of such a system requires:
 
 - NFS Server
 - DHCP Server
 - PXE+TFTP booting
-- Genkernel's initramfs
+- Genkernel's GMI kernel + initramfs
 - A 'diff-overlay' filesystem
 
 The big picture is that we need to setup network booting, using DHCP,

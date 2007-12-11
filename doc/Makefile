@@ -23,7 +23,11 @@ build:
 #
 webmanpage:
 	@echo "Generating HTML version for website..."
+
 	a2x --stylesheet=stylesheet-asciidoc.css genkernel.8.txt
-	scp genkernel.8.html shell.berlios.de:/home/groups/genkernel/htdocs
-	ssh shell.berlios.de chmod g+w /home/groups/genkernel/htdocs/genkernel.8.html
-	rm genkernel.8.xml
+	a2x --stylesheet=stylesheet-asciidoc.css HOWTO-genkernel-SSI-and-root-over-nfs.txt
+
+	scp HOWTO-genkernel-SSI-and-root-over-nfs.html genkernel.8.html shell.berlios.de:/home/groups/genkernel/htdocs
+	ssh shell.berlios.de chmod g+w /home/groups/genkernel/htdocs/genkernel.8.html /home/groups/genkernel/htdocs/HOWTO-genkernel-SSI-and-root-over-nfs.html
+
+	rm genkernel.8.xml HOWTO-genkernel-SSI-and-root-over-nfs.xml
