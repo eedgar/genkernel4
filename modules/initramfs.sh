@@ -1,6 +1,6 @@
 require initramfs_install
 
-kernel_cmdline_register 'root=/dev/ram0 real_root=/dev/$ROOT init=/linuxrc'
+kernel_cmdline_register 'root=/dev/ram0 real_root=/dev/$ROOT'
 kernel_cmdline_register ''
 kernel_cmdline_register '    Where $ROOT is the device node for your root partition as the'
 kernel_cmdline_register '    one specified in /etc/fstab'

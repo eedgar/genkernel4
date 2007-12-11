@@ -261,45 +261,44 @@ do
 	done
 done
 
-if [ "${USE_UNIONFS}" = "yes" ]
-then
-	got_one_broken_union="no"
-	good_msg "(unionfs) Adding unions to the root filesystem"
-	for rootfs in ${UNIONS}/*
-	do
-		dbg_msg "Inserting ${rootfs}"
-		# get the mode from the underlying fs' mode
-		mode="rw"
-		has "ro" "$( cat /proc/mounts | grep "${rootfs} " |  cut -f4 -d' ' )" && mode="ro"
-
-		good_msg "\t$( cat /proc/mounts | grep "${rootfs} " | cut -f1 -d' ' ) (${mode})"
-                # see kernel/Documentation/filesystems/unionfs/usage.txt
-		mount -t unionfs -o remount,add=${rootfs} none ${ROOTFS}
-		# was /sbin/unionctl ${ROOTFS} --add --after 0 --mode ${mode} ${rootfs} 2> /dev/null
-		if [ "$?" != "0" ]
-		then
-			warn_msg "\t\tfailed, but continuing"
-			got_one_broken_union="yes"
-		fi
-	done
-
-	if [ "${got_one_broken_union}" = "yes" ]
+if [ "${USE_UNIONFS}" = "yes" ]; then
+    got_one_broken_union="no"
+    good_msg "Adding unions to the root filesystem"
+    for rootfs in ${UNIONS}/*
+    do
+	dbg_msg "Inserting ${rootfs}"
+        # get the mode from the underlying fs' mode
+	mode="rw"
+	has "ro" "$( cat /proc/mounts | grep "${rootfs} " |  cut -f4 -d' ' )" && mode="ro"
+	
+	good_msg "\t$( cat /proc/mounts | grep "${rootfs} " | cut -f1 -d' ' ) (${mode})"
+        # see kernel/Documentation/filesystems/unionfs/usage.txt
+	mount -t unionfs -o remount,add=${rootfs} none ${ROOTFS}
+        # was /sbin/unionctl ${ROOTFS} --add --after 0 --mode ${mode} ${rootfs} 2> /dev/null
+	if [ "$?" != "0" ]
 	then
-		warn_msg "One of the unions was not added successfully."
-		warn_msg "GMI will try to continue, but you may experience problems."
-		warn_msg ""
-		warn_msg "Try passing the 'debug' option on the kernel command-line for more"
-		warn_msg "information before filing a bug report."
-		warn_msg ""
-		warn_msg "(Waiting 10 seconds...  CTRL-ALT-DEL to reboot now.)"
-		sleep 10
+	    warn_msg "\t\tfailed, but continuing"
+	    got_one_broken_union="yes"
 	fi
+    done
+    
+    if [ "${got_one_broken_union}" = "yes" ]
+    then
+	warn_msg "One of the unions was not added successfully."
+	warn_msg "GMI will try to continue, but you may experience problems."
+	warn_msg ""
+	warn_msg "Try passing the 'debug' option on the kernel command-line for more"
+	warn_msg "information before filing a bug report."
+	warn_msg ""
+	warn_msg "(Waiting 10 seconds...  CTRL-ALT-DEL to reboot now.)"
+	sleep 10
+    fi
 
-	# Remove the unionfs base
-	# see kernel/Documentation/filesystems/unionfs/usage.txt
-	mount -t unionfs -o remount,del=${UNIONS}/.base none ${ROOTFS}
-	# was unionctl ${ROOTFS} --remove ${UNIONS}/.base
-	umount ${UNIONS}/.base
+    # Remove the unionfs base
+    # see kernel/Documentation/filesystems/unionfs/usage.txt
+    mount -t unionfs -o remount,del=${UNIONS}/.base none ${ROOTFS}
+    # was unionctl ${ROOTFS} --remove ${UNIONS}/.base
+    umount ${UNIONS}/.base
 fi
 
 # If there are any mounts _under_ GMIMNT, we try to move these into 
@@ -351,6 +350,35 @@ then
 	done
 fi
 
+# We might also want to inject the running kernel's /lib/module/xyz,
+# if it does not exist on the final root filesystem
+if [ -e "/lib/modules/`uname -r`" ]
+then
+    dbg_msg "we have modules in /lib/modules/`uname -r`"
+    if [ ! -e "${ROOTFS}/lib/modules/`uname -r`" ]
+    then
+	dbg_msg "there is no ${ROOTFS}/lib/modules/`uname -r`"
+	if [ -w "${ROOTFS}/" ]
+	then
+	    dbg_msg "rootfs is writable"
+	    mkdir -p "${ROOTFS}/lib/modules/`uname -r`" 2>/dev/null
+	    good_msg "Inserting needed modules from initramfs in the final root"
+	    cp -v -r /lib/modules/`uname -r` ${ROOTFS}/lib/modules/`uname -r` 2>/dev/null
+	fi
+    fi
+fi
+
+# some distros need a /proc (Fedora, for example)
+mkdir ${ROOTFS}/proc 2>/dev/null
+mount -t proc proc ${ROOTFS}/proc 2>/dev/null
+# and some /dev/ices
+mkdir  ${ROOTFS}/dev 2>/dev/null
+cp -a /dev/* ${ROOTFS}/dev 2>/dev/null
+
+if [ "${USE_UNIONFS}" = "yes" ]; then
+    # no fscking please.
+    touch ${ROOTFS}/fastboot 2>/dev/null
+fi
 
 # Drop to shell now that all is set, for inspection
 [ -n "$DEBUG" ] && shell
@@ -366,6 +394,7 @@ cd /
 good_msg "Transferring control to ${INIT} ..."
 umount /sys
 umount /proc
+
 if [ -n "${CONSOLE}" ]
 then 
 	exec switch_root -c "${CONSOLE}" "${ROOTFS}" "${INIT}" "${INIT_ARGS}"

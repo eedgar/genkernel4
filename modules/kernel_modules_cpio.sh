@@ -18,7 +18,7 @@ kernel_modules_cpio::()
 	
 		# setup the modules profile
 		setup_modules_profile
-		cd ${INSTALL_MOD_PATH}	
+		cd ${INSTALL_MOD_PATH}
 		for i in `gen_dep_list`
 		do
 			mymod=`find ./lib/modules/${KV_FULL} -name "${i}${MOD_EXT}" 2>/dev/null| head -n 1 `
@@ -38,8 +38,13 @@ kernel_modules_cpio::()
 			cp -ax --parents "./lib/modules/${KV_FULL}/modules.dep" "${TEMP}/initramfs-modules-${KV_FULL}-temp/"
 		fi
 		
-	
+		# include all modules. thank you.
+#		cd ${INSTALL_MOD_PATH}
+#		mkdir -p "${TEMP}/initramfs-modules-${KV_FULL}-temp"
+#		cp -av --no-dereference * "${TEMP}/initramfs-modules-${KV_FULL}-temp"
+		
 		mkdir -p "${TEMP}/initramfs-modules-${KV_FULL}-temp/etc/modules/"
+
 		
 		for i in $(profile_list); do
 			if [ "${i:0:16}" == "modules-cmdline-" ]
@@ -128,5 +133,3 @@ modules_dep_list() {
 		cat ${INSTALL_MOD_PATH}/lib/modules/${KV_FULL}/modules.dep | grep ${1}${MOD_EXT}\: 2>/dev/null | cut -d\:  -f2
 	fi
 }
-
-

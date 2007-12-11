@@ -385,23 +385,25 @@ compile_generic() {
 		myAction='other'
 	fi
 
+	CPUS=$(cat /proc/cpuinfo  | grep processor | wc -l)
+	JOPT="-j $((  $CPUS + 1 ))"
 	OPTS=$@
 	if [ "${myAction}" == 'runtask' ]
 	then
         MAKEOPTS=$(profile_get_key makeopts)
 		print_info 2 "COMMAND: ${MAKE} ${OPTS}" 1 0 1
-		make "$@" 
+		make $JOPT "$@" 
 	else
-		print_info 2 "COMMAND: make $(profile_get_key makeopts) ${OPTS}" 1 0 1
+		print_info 2 "COMMAND: make $JOPT $(profile_get_key makeopts) ${OPTS}" 1 0 1
 		if [ "$(profile_get_key debuglevel)" -gt "1" ]
 		then
 			# Output to stdout and debugfile
-			make $(profile_get_key makeopts) "$@" 2>&1 | tee -a ${DEBUGFILE}
+			make $JOPT $(profile_get_key makeopts) "$@" 2>&1 | tee -a ${DEBUGFILE}
 			RET=${PIPESTATUS[0]}
 	        [ "${RET}" -eq '0' ] || die "Failed to compile ..."
 		else
 			# Output to debugfile only
-			make $(profile_get_key makeopts) "$@" >> ${DEBUGFILE} 2>&1
+			make $JOPT $(profile_get_key makeopts) "$@" >> ${DEBUGFILE} 2>&1
 			RET=$?
 	        [ "${RET}" -eq '0' ] || die "Failed to compile ..."
 		fi

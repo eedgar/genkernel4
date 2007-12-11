@@ -11,6 +11,11 @@
 # Script called by udhcpc to set up the networking given some variables
 #
 
+#
+# For more information : http://udhcp.busybox.net/README.udhcpc
+#
+
+
 initrd_defaults="/etc/initrd.defaults"
 
 . ${initrd_defaults}
@@ -26,13 +31,10 @@ RESOLV_CONF="/etc/resolv.conf"
 
 case "${1}" in
 	renew|bound )
-	        good_msg "Network configured :"
-		good_msg "   ${interface} ${ip} ${BROADCAST} ${NETMASK}"
 		/sbin/ifconfig ${interface} ${ip} ${BROADCAST} ${NETMASK}
 
 		if [ -n "${router}" ]
 		then
-			dbg_msg "Deleting routers"
 			while route del default gw 0.0.0.0 dev ${interface} 2> /dev/null; do
 				:
 			done
@@ -42,14 +44,14 @@ case "${1}" in
 			done
 		fi
 
+		[ -n "${hostname}" ] && hostname "${hostname}"
+
 		echo -n > ${RESOLV_CONF}
 		[ -n "${domain}" ] && echo search ${domain} >> ${RESOLV_CONF}
 
 		for entry in ${dns}
 		do
-			dbg_msg adding dns ${entry}
 			echo nameserver ${entry} >> ${RESOLV_CONF}
-			good_msg "  dns ${entry}"
 		done
 
 		# Save info for later use. This allows for multiple interfaces because
@@ -60,7 +62,6 @@ case "${1}" in
 		if [ -n "${domain}" ]
 		then
 			echo "domain=\"${domain}\"" >> ${initrd_defaults}
-			good_msg "  domain ${domain}"
 		fi
 
 		# For diskless NFS clients
@@ -76,7 +77,6 @@ case "${1}" in
 				then
 					nfsserver="$x"
 					echo "nfsserver=\"${nfsserver}\"" >> ${initrd_defaults}
-					good_msg "  nfsserver ${nfsserver}"
 				fi
 			fi
 		fi

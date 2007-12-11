@@ -23,6 +23,7 @@ kernel_modules_install::()
 	print_info 1 "Kernel modules installed in ${BOLD}${INSTO}${NORMAL}"
 	cd "${INSTO}"
 	print_info 1 "$(du -sch --no-dereference lib | tail -n1)"
-
+	print_info 1 "Updating module dependencies"
+	/sbin/depmod -b ${INSTO} ${KV_FULL}
     fi
 }

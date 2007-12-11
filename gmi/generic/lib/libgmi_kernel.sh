@@ -96,7 +96,8 @@ setup_unionfs() {
 			mkdir ${UNIONS}/.base
 			mount -t tmpfs tmpfs ${UNIONS}/.base
 			mount -t unionfs -o dirs=${UNIONS}/.base=rw unionfs ${ROOTFS}
-			USE_UNIONFS="yes"
+			# exported for external scripts (such as LiveCD fsloader)
+			export USE_UNIONFS="yes"
 		else
 			dbg_msg "The unionfs.ko module does not exist, unionfs disabled."
 		fi
