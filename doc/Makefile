@@ -1,7 +1,7 @@
 all: build
 
 clean:
-	rm genkernel.8 genkernel.8.html 
+	rm -f genkernel.8 genkernel.8.html HOWTO-genkernel-SFI-and-root-over-nfs.html HOWTO-genkernel-SFI-and-root-over-nfs.xml
 
 build:
 	@echo "Generating HTML..."
@@ -9,7 +9,7 @@ build:
 
 	@echo "Generating manpage..."
 	a2x -f manpage genkernel.8.txt --xsltproc-opts='--param man.justify true'
-	rm genkernel.8.xml
+	rm -f genkernel.8.xml
 
 #
 # For the following to work, you will a password-less key setup to login to
@@ -21,13 +21,13 @@ build:
 #     Host shell.berlios.de
 #         User trucker
 #
-webmanpage:
+webdoc:
 	@echo "Generating HTML version for website..."
 
 	a2x --stylesheet=stylesheet-asciidoc.css genkernel.8.txt
-	a2x --stylesheet=stylesheet-asciidoc.css HOWTO-genkernel-SSI-and-root-over-nfs.txt
+	a2x --stylesheet=stylesheet-asciidoc.css HOWTO-genkernel-SFI-and-root-over-nfs.txt
 
-	scp HOWTO-genkernel-SSI-and-root-over-nfs.html genkernel.8.html shell.berlios.de:/home/groups/genkernel/htdocs
-	ssh shell.berlios.de chmod g+w /home/groups/genkernel/htdocs/genkernel.8.html /home/groups/genkernel/htdocs/HOWTO-genkernel-SSI-and-root-over-nfs.html
+	scp HOWTO-genkernel-SFI-and-root-over-nfs.html genkernel.8.html shell.berlios.de:/home/groups/genkernel/htdocs
+	ssh shell.berlios.de chmod g+w /home/groups/genkernel/htdocs/genkernel.8.html /home/groups/genkernel/htdocs/HOWTO-genkernel-SFI-and-root-over-nfs.html
 
-	rm genkernel.8.xml HOWTO-genkernel-SSI-and-root-over-nfs.xml
+	rm genkernel.8.xml HOWTO-genkernel-SFI-and-root-over-nfs.xml
