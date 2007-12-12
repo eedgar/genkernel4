@@ -14,12 +14,5 @@ kernel_modules_compile::()
 		
 		print_info 1 '>> Compiling kernel modules ...'
 		compile_generic ${KERNEL_ARGS} modules
-		mkdir -p ${TEMP}/kernel-modules-compile
-		KERNEL_ARGS="${KERNEL_ARGS} INSTALL_MOD_PATH=${TEMP}/kernel-modules-compile"
-		compile_generic ${KERNEL_ARGS} modules_install
-		cd ${TEMP}/kernel-modules-compile
-		genkernel_generate_package "kernel-modules-${KV_FULL}" "."
-		cd $(profile_get_key kernel-tree)
-		rm -rf ${TEMP}/kernel-modules-compile
 	fi
 }

@@ -186,6 +186,19 @@ mkdir -p "${CACHE_DIR}/$(profile_get_key profile)" 2>/dev/null
     die "Cannot have write access to profile cache directory '${CACHE_DIR}/$(profile_get_key profile)'!"
 CACHE_DIR="${CACHE_DIR}/$(profile_get_key profile)"
 
+# Create the kbuild_output directory
+#
+if [ -n "$(profile_get_key kbuild-output)" ]
+then
+    KBUILD_OUTPUT="$(profile_get_key kbuild-output)"
+else
+    KBUILD_OUTPUT="${CACHE_DIR}/kbuild_output"
+    mkdir -p ${KBUILD_OUTPUT}
+fi
+[ ! -w ${KBUILD_OUTPUT} ] && \
+    die "Could not write to ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
+profile_set_key kbuild-output ${KBUILD_OUTPUT}
+
 
 genkernel_lookup_packages
 genkernel_lookup_kernel
@@ -220,7 +233,6 @@ if [ ! -w "$(profile_get_key install-to-prefix)" ]; then
     print_warning 1 "The install-to-prefix will be:"
     print_warning 1 "   $(profile_get_key install-to-prefix)"
 fi
-
 
 # Process depends
 print_info 1 '>> Processing dependency tree...'

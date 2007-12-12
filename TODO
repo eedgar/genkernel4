@@ -1,12 +1,7 @@
 Things to fix:
 
-* Put up an http://genkernel.org/dist/ repository, and auto-download
-  the needed files to local cache if needed
-
 * Use "make kernelversion" in the kernel tree to determine the kernel version safely
   (replace the grep/sed/blah version checking with that)
-
-* Fix the "create kbuild_output" side effect of get_KV()
 
 * Specify kernel config options on the genkernel cmdline
 
@@ -18,12 +13,13 @@ Things to fix:
 * --list-module-groups for gmi
 
 * gmi: We need modules in the sense that you can just add an overlay
-  and the initramfs scripts will pick up the .sh and run it.  
+  and the initramfs scripts will pick up the .sh and run it.
 
   Perhaps some "preroot" and "postroot" directories, containing
   scripts that get executed before the mounting and, well, after
   Dropping scripts there would ensure execution.  What about the
-  execution order?
+  execution order?  Or some explicit running: vmlinuz
+  post-root=bla:asdf;bla2:asdf <...> on the kernel command line.
 
 busybox: fix config (add --busybox-networking opt or something)
 

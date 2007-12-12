@@ -10,23 +10,7 @@ get_KV() {
     
     KERNEL_DIR="$1"
     [ ! -e "$1/Makefile" ] && die "Kernel source tree '$KERNEL_DIR' invalid, no Makefile found!"
-    
-    # that's some side effect... and should probably be somewhere else
-    # ...
-    if [ -n "$(profile_get_key kbuild-output)" ]
-    then
-	KBUILD_OUTPUT="$(profile_get_key kbuild-output)"
-    else
-	KBUILD_OUTPUT="${CACHE_DIR}/kbuild_output"
-	mkdir -p ${KBUILD_OUTPUT}
-    fi
-    
-    [ ! -w ${KBUILD_OUTPUT} ] && "Could not write to ${KBUILD_OUTPUT}.  Set kbuild-output to a writeable directory or run as root"
-    
-    profile_set_key kbuild-output ${KBUILD_OUTPUT}
-    # ...
-    # end 'side effect'
-    
+        
     if [ -f "$(profile_get_key kbuild-output)/localversion-genkernel" ]
     then
 	version_string=$(cat $(profile_get_key kbuild-output)/localversion-genkernel)
