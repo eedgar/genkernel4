@@ -4,6 +4,7 @@
 # -- Various core subroutines
 
 # Copyright: 2006 plasmaroo@gentoo,org, rocket@gentoo.org
+#            2007 Jean-Francois Richard <jean-francois@richard.name>
 # License: GPLv2
 
 die() {

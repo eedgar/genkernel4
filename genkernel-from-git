@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright: Jean-Francois Richard <jean-francois@richard.name>
 
 script_name=$(basename $0)
 
@@ -33,7 +34,6 @@ cd "$ktree"
 if [ "$ktag" = "current" ]; then
     echo "Using the current kernel tree configuration"
 else
-
     if [ "$ktag" = "latest" ]; then
 	ktag=master
 	echo "Checking out tag '$ktag' in the kernel tree"    

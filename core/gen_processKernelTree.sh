@@ -2,6 +2,7 @@
 # -- Core kernel tree processing
 
 # Copyright: 2006 plasmaroo@gentoo,org, rocket@gentoo.org
+#            2007 Jean-Francois Richard <jean-francois@richard.name>
 #            Portions copyright 1999-2006 Gentoo Foundation
 # License: GPLv2
 

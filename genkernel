@@ -2,7 +2,9 @@
 # genkernel v4
 # -- the main genkernel script
 
-# Copyright: 2006 plasmaroo@gentoo,org, rocket@gentoo.org
+# Copyright: Tim Yamin <plasmaroo@gentoo,org>
+#            Erid Edgar <rocket@gentoo.org>
+#            Jean-Francois Richard <jean-francois@richard.name>
 # License: GPLv2
 
 PATH='/bin:/usr/bin:/sbin:/usr/sbin'

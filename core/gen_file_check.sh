@@ -4,6 +4,7 @@
 # -- Downloaded files check system
 
 # Copyright: 2006 rocket@gentoo.org
+#            2007 Jean-Francois Richard <jean-francois@richard.name>
 # License: GPLv2
 
 declare -a __FILES_CHECK__REG__D # Data
