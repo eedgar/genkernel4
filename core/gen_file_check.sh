@@ -9,27 +9,35 @@
 declare -a __FILES_CHECK__REG__D # Data
 
 files_register_read() {
-	local header_printed=0
-	
-	for (( n = 0 ; n < ${#__FILES_CHECK__REG__D[@]}; ++n )) ; do
+    local header_printed=0
+    
+    for (( n = 0 ; n < ${#__FILES_CHECK__REG__D[@]}; ++n )) ; do
         if [ ! -f "${__FILES_CHECK__REG__D[${n}]}" ]
         then
             MISSING=1
+	    print_info 1 "Source package $(basename ${__FILES_CHECK__REG__D[${n}]}) is missing"
         fi
     done
+
     if [ "${MISSING}" == "1" ]
     then
-		echo
-		print_info 1 "Missing Files Needed:"
-	    for (( n = 0 ; n < ${#__FILES_CHECK__REG__D[@]}; ++n )) ; do
+	print_info 1 "Downloading the missing files..."
+	for (( n = 0 ; n < ${#__FILES_CHECK__REG__D[@]}; ++n )) ; do
             if [ ! -f "${__FILES_CHECK__REG__D[${n}]}" ]
             then
-		        print_info 1 "     ${__FILES_CHECK__REG__D[${n}]} is missing."
+		cd "${SRCPKG_DIR}"
+
+		# not very secure, waiting for a proper certificate from berlios.de...
+		# at least it is encrypted :(
+		wget --no-check-certificate --progress=bar -nc "https://genkernel.berlios.de/distfiles/$(basename ${__FILES_CHECK__REG__D[${n}]})"
+		if [ "$?" != "0" ]; then
+		    die "Could not auto-download missing source package $(basename ${__FILES_CHECK__REG__D[${n}]}) to ${SRCPKG_DIR}"
+		fi
+
+		cd - &>/dev/null
             fi
-	    done
-		echo
-        die "Download missing files and rerun genkernel"
-	fi
+	done
+    fi
 }
 
 files_register() {
@@ -40,11 +48,10 @@ files_register() {
             return
         fi
     done
-
-	__FILES_CHECK__REG__D[${#__FILES_CHECK__REG__D[@]}]="${1}"
+    
+    __FILES_CHECK__REG__D[${#__FILES_CHECK__REG__D[@]}]="${1}"
 }
 
 files_unregister() {
-	__FILES_CHECK__REG__D=()
-
+    __FILES_CHECK__REG__D=()
 }
