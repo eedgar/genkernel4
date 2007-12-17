@@ -276,6 +276,5 @@ done
 
 # End of execution for now
 cleanup
-echo $TEMP
 
 exit 0

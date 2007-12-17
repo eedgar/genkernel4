@@ -368,9 +368,10 @@ then
     fi
 fi
 
-# some distros need a /proc (Fedora, for example)
-mkdir ${ROOTFS}/proc 2>/dev/null
-mount -t proc proc ${ROOTFS}/proc 2>/dev/null
+# some distros need a /proc and /sys (Fedora, for example)
+mkdir ${ROOTFS}/proc ${ROOTFS}/sys
+mount -t proc proc ${ROOTFS}/proc
+mount -t sysfs sysfs ${ROOTFS}/sys
 # and some /dev/ices
 mkdir  ${ROOTFS}/dev 2>/dev/null
 cp -a /dev/* ${ROOTFS}/dev 2>/dev/null

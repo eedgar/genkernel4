@@ -276,3 +276,29 @@ everything, but you may well export the base read-only system from one
 server and have the state stored on another.  It may have an impact on
 filesystem performance (good or bad, it is up the the user to
 benchmark the networking and filesystem performances).
+
+
+udev problems
+~~~~~~~~~~~~~
+
+On many distributions like Fedora or Ubuntu, the boot process will
+involve starting `udev` at an early stage. `udev` will most probably
+try to reconfigure/hotplug/rename the network interfaces.
+
+To prevent `udev` from touching the network device setup (since the
+initramfs successfully started networking if we could get to `init`),
+you might consider adding whiteouts for some of its rules files on the
+diff-overlay.
+
+For example, on Fedora Core 8, we can add these whiteouts to prevent
+`udev` from reconfiguring the network devices.  This way, the network
+connection to the NFS server(s) will not be altered and the boot
+process will proceed normally.
+
+---------------------------------
+$ cd /var/state/systems/node01
+$ cd etc/udev/rules.d
+$ touch .wh.60-net.rules \
+        .wh.70-persistent-net.rules \
+        .wh.75-persistent-net-generator.rules
+---------------------------------
