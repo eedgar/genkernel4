@@ -174,12 +174,14 @@ shell(){
 	cd /
 
 	# Fix for UML
-	if is_uml_sys
-	then
-		openvt 0 /bin/ash
-	else
-		openvt 1 /bin/ash
-	fi
+	# if is_uml_sys
+	# then
+	#	openvt 0 /bin/ash
+	# else
+	#	openvt 1 /bin/ash
+	# fi
+
+	/bin/ash
 }
 
 # Parse the kernel command line and set variables accordingly

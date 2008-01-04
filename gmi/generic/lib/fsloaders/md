@@ -43,7 +43,7 @@ setup_device() {
 		assert "$?" "Creation of '/dev/md${MD_NUMBER}' failed" || return 1
 	fi
 
-	mdstart /dev/md${MD_NUMBER}
+	raidautorun /dev/md${MD_NUMBER}
 	assert "$?" "Starting of '/dev/md${MD_NUMBER}' failed" || return 1
 }
 

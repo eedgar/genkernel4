@@ -104,6 +104,19 @@ setup_unionfs() {
 	fi
 }
 
+setup_unionfsalike() {
+	# Use aufs if available; otherwise let's try unionfs
+	grep -qs 'aufs' /proc/filesystems
+	if [ "$?" -eq 0 ]
+	then
+		good_msg "Enabling aufs support"
+		USE_AUFS="yes"
+		USE_UNIONFSALIKE="yes"
+	else
+		USE_UNIONFSALIKE="yes"
+		setup_unionfs
+	fi
+}
 
 # Detect SBP-2 devices
 #

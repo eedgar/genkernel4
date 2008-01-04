@@ -1,0 +1,78 @@
+diff -ur busybox-1.9.0.orig/applets/applets.c busybox-1.9.0/applets/applets.c
+--- busybox-1.9.0.orig/applets/applets.c	2008-01-04 08:11:50.000000000 +0000
++++ busybox-1.9.0/applets/applets.c	2008-01-04 08:12:40.000000000 +0000
+@@ -10,17 +10,6 @@
+ #include <assert.h>
+ #include "busybox.h"
+ 
+-/* Apparently uclibc defines __GLIBC__ (compat trick?). Oh well. */
+-#if ENABLE_STATIC && defined(__GLIBC__) && !defined(__UCLIBC__)
+-#warning Static linking against glibc produces buggy executables
+-#warning (glibc does not cope well with ld --gc-sections).
+-#warning See sources.redhat.com/bugzilla/show_bug.cgi?id=3400
+-#warning Note that glibc is unsuitable for static linking anyway.
+-#warning If you still want to do it, remove -Wl,--gc-sections
+-#warning from scripts/trylink and remove this warning.
+-#error Aborting compilation.
+-#endif
+-
+ #if ENABLE_BUILD_LIBBUSYBOX
+ int main(int argc, char **argv)
+ {
+diff -ur busybox-1.9.0.orig/scripts/trylink busybox-1.9.0/scripts/trylink
+--- busybox-1.9.0.orig/scripts/trylink	2008-01-04 08:11:50.000000000 +0000
++++ busybox-1.9.0/scripts/trylink	2008-01-04 08:12:31.000000000 +0000
+@@ -76,7 +76,7 @@
+ 	-o $EXE \
+ 	-Wl,--sort-common \
+ 	$SORT_SECTION \
+-	-Wl,--gc-sections \
++	\
+ 	-Wl,--start-group $O_FILES $A_FILES -Wl,--end-group \
+ 	$l_list \
+ || {
+@@ -100,7 +100,7 @@
+ 		-o $EXE \
+ 		-Wl,--sort-common \
+ 		$SORT_SECTION \
+-		-Wl,--gc-sections \
++		\
+ 		-Wl,--start-group $O_FILES $A_FILES -Wl,--end-group \
+ 		$l_list
+ 	if test $? = 0; then
+@@ -129,7 +129,7 @@
+ 	    -o $EXE \
+ 	    -Wl,--sort-common \
+ 	    $SORT_SECTION \
+-	    -Wl,--gc-sections \
++	    \
+ 	    -Wl,--start-group $O_FILES $A_FILES -Wl,--end-group \
+ 	    $l_list \
+ 	    -Wl,--warn-common \
+@@ -151,7 +151,7 @@
+ 	    -o $EXE \
+ 	    -Wl,--sort-common \
+ 	    $SORT_SECTION \
+-	    -Wl,--gc-sections \
++	    \
+ 	    -Wl,-T -Wl,busybox_ldscript \
+ 	    -Wl,--start-group $O_FILES $A_FILES -Wl,--end-group \
+ 	    $l_list \
+@@ -207,7 +207,7 @@
+ 	    -o $EXE \
+ 	    -Wl,--sort-common \
+ 	    $SORT_SECTION \
+-	    -Wl,--gc-sections \
++	    \
+ 	    -Wl,--start-group $O_FILES -Wl,--end-group \
+ 	    -L"$sharedlib_dir" -lbusybox \
+ 	    -Wl,--warn-common \
+@@ -246,7 +246,7 @@
+ 		-o $EXE \
+ 		-Wl,--sort-common \
+ 		$SORT_SECTION \
+-		-Wl,--gc-sections \
++		\
+ 		-L"$sharedlib_dir" -lbusybox \
+ 		-Wl,--warn-common \
+ 	|| {

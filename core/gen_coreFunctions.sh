@@ -236,7 +236,7 @@ clear_log() {
 	[ ! -w "$(profile_get_key debugfile)" ]  && DEBUGFILE="$(mktemp -t genkernel.log.XXXXXXXXXX)"
 
 	profile_set_key debugfile "${DEBUGFILE}"
-	print_info 1 ">> Detailled log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}"
+	print_info 1 ">> Debug log: ${BOLD}$(profile_get_key debugfile) ${NORMAL}"
 }
 
 die_debugged() {
