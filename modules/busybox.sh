@@ -21,6 +21,7 @@ busybox::()
 	#done
 	
 	cd ${TEMP}/busybox-cpiogen 2>&1 >/dev/null
+	touch /etc/mdev.conf 2>&1 >/dev/null
 	genkernel_generate_cpio_files "busybox-${BUSYBOX_VER}" bin/*
 	initramfs_register_cpio "busybox-${BUSYBOX_VER}"
 	cd ${TEMP}

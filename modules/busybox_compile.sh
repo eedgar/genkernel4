@@ -45,7 +45,7 @@ busybox_compile::()
 	if logicTrue $(profile_get_key busybox-menuconfig)
 	then
 		print_info 1 "${PRINT_PREFIX}>> Running busybox menuconfig..."
-		compile_busybox runtask menuconfig
+		compile_generic runtask menuconfig
 		[ "$?" ] || die 'Error: busybox menuconfig failed!'
 		
 		if [ -w /etc/kernels ]

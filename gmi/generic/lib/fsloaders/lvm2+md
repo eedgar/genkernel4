@@ -40,11 +40,11 @@ do_mount() {
 	# unwrapping parameters for human beings
 	local mountpoint="${1}"
 	local lvmdevice="${2}"
-	local mddevices="${2}"
-	local mount_opts="${3}"
+	local mddevices="${3}"
+	local mount_opts="${4}"
 	local dev
 
-	for dev in $( echo "${devices}" | sed 's/,/ /g' )
+	for dev in $( echo "${mddevices}" | sed 's/,/ /g' )
 	do
 		dbg_msg 'Asking md to setup ${dev}'
 		${FSLOADERS}/md --setup-device "${dev}"
