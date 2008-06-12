@@ -387,7 +387,7 @@ compile_generic() {
 	fi
 
 	CPUS=$(cat /proc/cpuinfo  | grep processor | wc -l)
-	JOPT="-j $((  $CPUS + 1 ))"
+	#JOPT="-j $((  $CPUS + 1 ))"
 	OPTS=$@
 	if [ "${myAction}" == 'runtask' ]
 	then

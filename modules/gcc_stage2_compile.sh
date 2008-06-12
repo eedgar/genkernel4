@@ -58,6 +58,7 @@ gcc_stage2_compile::()
 		--enable-languages=c,c++ \
 		--disable-shared \
 		--with-sysroot=${STAGING_DIR} \
+		--with-build-sysroot=${STAGING_DIR} \
 		--disable-__cxa_atexit \
 		--enable-target-optspace \
 		--with-gnu-ld \

@@ -45,6 +45,7 @@ open_iscsi_tools_compile::()
 	if [ -n "$(profile_get_key utils-cross-compile)" ]
 	then
 		CC="$(profile_get_key utils-cross-compile)-gcc"
+        # sysroot isysroot
 	else
 		CC="gcc"
 	fi

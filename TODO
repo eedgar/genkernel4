@@ -45,3 +45,5 @@ the print_info command is going to need some work too
 
     maybe run the "gen_init_cpio" binary from the kernel source tree, then use
     a "nod bla\ndir bla"-style file?
+
+* Kernel install and Kmod install might depend on initramfs compile

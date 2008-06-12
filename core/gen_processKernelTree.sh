@@ -262,7 +262,7 @@ determine_config_file() {
 
     if [ -f "/proc/config.gz" ]; then
 	zcat /proc/config.gz > "${TEMP}/from-running-system.config" 2> /dev/null
-	logicTrue $(profile_get_key running-kernel-config) && \\
+	logicTrue $(profile_get_key running-kernel-config) && \
 	    profile_set_key kernel-config "${TEMP}/from-running-system.config"
     else
 	logicTrue $(profile_get_key running-kernel-config) && \
