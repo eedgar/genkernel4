@@ -30,7 +30,11 @@ fi
 # suppress kernel messages
 quiet_kmsg 
 
+# mke2fs -j complains without this
+ln -s /proc/mounts /etc/mtab
+
 # busybox udev replacement
+touch /etc/mdev.conf
 mdev -s
 
 # catch udev hotplug events
@@ -424,6 +428,11 @@ fi
 unset DEBUG
 unset USE_UNIONFS
 verbose_kmsg
+
+# Clean up mdev -- if the new root contains mdev and we do not do this,
+# there will be a conflict between (for example) mdev and udev in the
+# new root if both exist...
+echo > /proc/sys/kernel/hotplug
 
 # Make sure we are in the root before the switch_root command is called
 cd /

@@ -54,7 +54,17 @@ setup_networking() {
 		elif [ "${autoconf}" = "bootp" -o "${autoconf}" = "rarp" ]
 		then
 			good_msg "Using kernel IP configuration (${autoconf})"
+		elif [ "${autoconf}" = "zcip" ]
+		then
+			# Only 'zcip' was on the line, the user did not
+			# use the full '::::::zcip'.  Must correct 'ethdev'
+			[ "${ethdev}" = "zcip" ] && ethdev="eth0"
 
+			good_msg "Setting up networking on ${ethdev} (${autoconf})"
+			chmod +x ${LIBGMI}/zcip.sh # Make sure zcip can execute the script
+
+			zcip -f -q -v "${ethdev}" ${LIBGMI}/zcip.sh
+			assert "$?" "\t'ip=${IP}' setup failed" || return 1
 		else
 			good_msg "Setting up networking (manual config)"
 
