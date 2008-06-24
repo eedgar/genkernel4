@@ -8,7 +8,7 @@ files_register "${SRCPKG_DIR}/busybox-${BUSYBOX_VER}.tar.bz2"
 busybox_compile::()
 {
 	local	BUSYBOX_SRCTAR="${SRCPKG_DIR}/busybox-${BUSYBOX_VER}.tar.bz2" BUSYBOX_DIR="busybox-${BUSYBOX_VER}" \
-		BUSYBOX_CONFIG
+		BUSYBOX_CONFIG BUSYBOX_CROSS
 	[ -f "${BUSYBOX_SRCTAR}" ] || die "Could not find busybox source tarball: ${BUSYBOX_SRCTAR}!"
 
 	if [ -n "$(profile_get_key busybox-config)" ]
@@ -86,8 +86,15 @@ busybox_compile::()
 	yes '' 2>/dev/null | compile_generic oldconfig
     # less .config
 	print_info 1 'busybox: >> Compiling...'
-	compile_generic all
-    # No need to strip output the Makefile already does it.
+
+	BUSYBOX_CROSS=""
+	if [ "$(profile_get_key utils-cross-compile)" != "" ]
+	then
+		BUSYBOX_CROSS="CROSS_COMPILE=$(profile_get_key utils-cross-compile)"
+	fi
+
+	compile_generic "${BUSYBOX_CROSS}" all
+	# No need to strip output the Makefile already does it.
 
 	[ -f "busybox" ] || die 'Busybox executable does not exist!'
 	

@@ -10,7 +10,11 @@ get_KV() {
     KNAME="$(profile_get_key kernel-name)"
     
     KERNEL_DIR="$1"
-    [ ! -e "$1/Makefile" ] && die "Kernel source tree '$KERNEL_DIR' invalid, no Makefile found!"
+    if [ ! -e "$1/Makefile" ]
+    then
+	[ "$2" != 'silent' ] && die "Kernel source tree '$KERNEL_DIR' invalid, no Makefile found!"
+	return
+    fi
         
     if [ -f "$(profile_get_key kbuild-output)/localversion-genkernel" ]
     then
@@ -88,7 +92,7 @@ get_KV() {
 }
 
 genkernel_lookup_kernel() {
-	get_KV $(profile_get_key kernel-tree)
+	get_KV $(profile_get_key kernel-tree) silent
 
 	[ "$1" != 'silent' ] && print_info 1 "Kernel Tree: Linux kernel ${BOLD}${KV_FULL}${NORMAL} for ${BOLD}$(profile_get_key arch)${NORMAL}, at $(profile_get_key kernel-tree)"
 	provide kernel_src_tree
