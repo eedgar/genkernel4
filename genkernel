@@ -17,24 +17,29 @@ die() {
 }
 
 # Autodetect genkernel home if its not set as an env variable
-PATH="${PATH} $(dirname $0 2>/dev/null)"
+PATH="${PATH}:$(dirname $0 2>/dev/null)"
 
 which genkernel 2>/dev/null 1>/dev/null
 if [ $? == 0 ]; then
     gkpath="$(which genkernel 2>/dev/null)"
-    PATH="${PATH} $( dirname '${gkpath}' 2>/dev/null )"
+    PATH="${PATH}:$( dirname '${gkpath}' 2>/dev/null )"
 
     # is it a link pointing to the real gk_home?
     readlink "${gkpath}" 2>/dev/null 1>/dev/null
     if [ $? == 0 ]; then
 	gkpath=$( readlink "${gkpath}" 2>/dev/null )
-	PATH="${PATH} $( dirname '${gkpath}' 2>/dev/null )"
+	PATH="${PATH}:$( dirname '${gkpath}' 2>/dev/null )"
     fi
+fi
+
+if [ -f genkernel ]
+then
+    GENKERNEL_HOME="$(pwd)"
 fi
 
 if [ "$GENKERNEL_HOME" == "" ]
 then
-    for i in $PATH
+    for i in "${PATH/:/ }"
     do
         if [ -f "$i/core/gen_initialize.sh" ]
         then

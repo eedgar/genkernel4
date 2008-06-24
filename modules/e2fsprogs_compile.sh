@@ -16,26 +16,25 @@ e2fsprogs_compile::() {
 	[ -d "${E2FSPROGS_DIR}" ] || die "e2fsprogs directory ${E2FSPROGS_DIR} invalid"
 	cd "${E2FSPROGS_DIR}"
 
-    # turn on/off the cross compiler
-    if [ -n "$(profile_get_key utils-cross-compile)" ]
-    then
+	# turn on/off the cross compiler
+	if [ -n "$(profile_get_key utils-cross-compile)" ]
+	then
 		TARGET=$(profile_get_key utils-cross-compile)
-        ARGS="${ARGS} --host=$(${TARGET}-gcc -dumpmachine)"
+		ARGS="${ARGS} --host=$(${TARGET}gcc -dumpmachine)"
 	else
 		TARGET=$(gcc -dumpmachine)
-		
-    fi
+	fi
 
 	print_info 1 'e2fsprogs: >> Configuring...'
 	
-	CC=${TARGET}-gcc \
-	CXX=${TARGET}-g++ \
+	CC=${TARGET}gcc \
+	CXX=${TARGET}g++ \
 	configure_generic  --with-ldopts=-static --prefix=${TEMP}/e2fsprogs-out ${ARGS}
 
 	print_info 1 'e2fsprogs: >> Compiling...'
 	
-	CC=${TARGET}-gcc \
-	CXX=${TARGET}-g++ \
+	CC=${TARGET}gcc \
+	CXX=${TARGET}g++ \
 	compile_generic V=1 # Run make
 	
 	compile_generic install
