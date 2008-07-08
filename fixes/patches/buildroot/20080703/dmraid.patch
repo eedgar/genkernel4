@@ -1,0 +1,12 @@
+diff -urN buildroot.orig/package/dmraid/dmraid.mk buildroot/package/dmraid/dmraid.mk
+--- buildroot.orig/package/dmraid/dmraid.mk	2008-07-03 02:15:38.000000000 -0500
++++ buildroot/package/dmraid/dmraid.mk	2008-07-07 15:50:15.000000000 -0500
+@@ -39,7 +39,7 @@
+ 	touch $(DMRAID_DIR)/.configured
+ 
+ $(DMRAID_DIR)/tools/$(DMRAID_BINARY): $(DMRAID_DIR)/.configured
+-	$(MAKE1) -C $(DMRAID_DIR)
++	DESTDIR=$(STAGING_DIR) $(MAKE1) -C $(DMRAID_DIR)
+ 	-$(STRIPCMD) $(DMRAID_DIR)/tools/$(DMRAID_BINARY)
+ 	-$(UPX) --best $(DMRAID_DIR)/tools/$(DMRAID_BINARY)
+ 	touch -c $(DMRAID_DIR)/tools/$(DMRAID_BINARY)
