@@ -10,8 +10,8 @@ aoetools_compile::()
     local COMMANDS ARGS
 
 		cd "${TEMP}"
-		rm -rf ${AOETOOLS_DIR} > /dev/null
-		unpack ${AOETOOLS_SRCTAR} || die 'Could not extract aoetools source tarball!'
+		rm -rf "${AOETOOLS_DIR}" > /dev/null
+		unpack "${AOETOOLS_SRCTAR}" || die 'Could not extract aoetools source tarball!'
 		[ -d "${AOETOOLS_DIR}" ] || die 'aoetools directory ${AOETOOLS_DIR} is invalid!'
 		cd "${AOETOOLS_DIR}" > /dev/null	
 		gen_patch ${FIXES_PATCHES_DIR}/aoetools/${AOETOOLS_VER} .
@@ -32,7 +32,7 @@ aoetools_compile::()
         #ARGS="${ARGS} DESTDIR=${TEMP}/aoetools-output"
         #compile_generic ${ARGS} install # Install
 
-		[ -e ${TEMP}/aoetools-output ] && rm -rf ${TEMP}/aoetools-output
+		[ -e "${TEMP}/aoetools-output" ] && rm -rf "${TEMP}/aoetools-output"
 		mkdir -p ${TEMP}/aoetools-output/sbin
         COMMANDS="aoe-discover aoe-interfaces aoe-mkshelf aoe-revalidate aoe-flush aoe-stat aoe-mkdevs aoe-version aoeping"
         for i in ${COMMANDS}

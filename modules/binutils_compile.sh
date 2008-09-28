@@ -10,8 +10,8 @@ binutils_compile::()
 
 	#cd "${TEMP}"
 	cd "${CACHE_DIR}"
-	rm -rf ${BINUTILS_DIR} > /dev/null
-	unpack ${BINUTILS_SRCTAR} || die 'Could not extract binutils source tarball!'
+	rm -rf "${BINUTILS_DIR}" > /dev/null
+	unpack "${BINUTILS_SRCTAR}" || die 'Could not extract binutils source tarball!'
 	[ -d "${BINUTILS_DIR}" ] || die 'Binutils directory ${BINUTILS_DIR} is invalid!'
 
 	cd "${BINUTILS_DIR}"

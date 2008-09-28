@@ -8,8 +8,8 @@ luks_compile::()
     local COMMANDS ARGS
 
 		cd "${TEMP}"
-		rm -rf ${LUKS_DIR} > /dev/null
-		unpack ${LUKS_SRCTAR} || die 'Could not extract aoetools source tarball!'
+		rm -rf "${LUKS_DIR}" > /dev/null
+		unpack "${LUKS_SRCTAR}" || die 'Could not extract aoetools source tarball!'
 		[ -d "${LUKS_DIR}" ] || die 'aoetools directory ${AOETOOLS_DIR} is invalid!'
 		cd "${LUKS_DIR}" > /dev/null	
 		gen_patch ${FIXES_PATCHES_DIR}/luks/${LUKS_VER} .
@@ -40,8 +40,8 @@ luks_compile::()
         ARGS=""
         compile_generic ${ARGS} # Compile
 
-		[ -e ${TEMP}/luks-output ] && rm -rf ${TEMP}/luks-output
-		mkdir -p ${TEMP}/luks-output/sbin
+		[ -e "${TEMP}/luks-output" ] && rm -rf "${TEMP}/luks-output"
+		mkdir -p "${TEMP}/luks-output/sbin"
         find . -name cryptsetup
         cp ./src/cryptsetup ${TEMP}/luks-output/sbin
         #compile_generic ${ARGS} install # Compile

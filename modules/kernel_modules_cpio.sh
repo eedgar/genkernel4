@@ -74,7 +74,7 @@ kernel_modules_cpio::()
 
 gen_dep_list() {
 	local i
-	rm -f ${TEMP}/moddeps > /dev/null
+	rm -f "${TEMP}/moddeps" > /dev/null
 	for i in $(profile_list_keys "modules")
 	do
 		gen_deps $(profile_get_key $i "modules")

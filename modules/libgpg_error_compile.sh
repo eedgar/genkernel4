@@ -9,8 +9,8 @@ libgpg_error_compile::()
     local COMMANDS ARGS
 
 		cd "${TEMP}"
-		rm -rf ${DIR} > /dev/null
-		unpack ${SRCTAR} || die "Could not extract ${SRCTAR}"
+		rm -rf "${DIR}" > /dev/null
+		unpack "${SRCTAR}" || die "Could not extract ${SRCTAR}"
 		[ -d "${DIR}" ] || die '${DIR} is invalid!'
 		cd "${DIR}" > /dev/null	
 		gen_patch ${FIXES_PATCHES_DIR}/libgpg_error/${LIBGPG_ERROR_VER} .

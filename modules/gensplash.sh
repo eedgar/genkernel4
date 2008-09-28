@@ -10,7 +10,7 @@ gensplash::() {
 
 		local tmp=""
 		[ -n "$(profile_get_key gensplash-res)" ] && tmp="-r $(profile_get_key gensplash-res)"
-		[ -e ${TEMP}/gensplash-${GENSPLASH_THEME}.cpio.gz ] && rm ${TEMP}/gensplash-${GENSPLASH_THEME}.cpio.gz
+		[ -e ${TEMP}/gensplash-${GENSPLASH_THEME}.cpio.gz ] && rm "${TEMP}/gensplash-${GENSPLASH_THEME}.cpio.gz"
 
 		splash_geninitramfs -g ${TEMP}/gensplash-${GENSPLASH_THEME}.cpio.gz ${tmp} ${GENSPLASH_THEME}
 		initramfs_register_external_cpio ${TEMP}/gensplash-${GENSPLASH_THEME}.cpio.gz		

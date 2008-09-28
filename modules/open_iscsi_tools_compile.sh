@@ -16,7 +16,7 @@ open_iscsi_tools_compile::()
 	[ ! -d "${OPENISCSI_DIR}" ] && die "open-iscsi directory ${OPENISCSI_DIR} invalid"
 
 	cd "${OPENISCSI_DIR}"
-	gen_patch ${FIXES_PATCHES_DIR}/open-iscsi/${OPENISCSI_VER} .
+	gen_patch "${FIXES_PATCHES_DIR}/open-iscsi/${OPENISCSI_VER}" .
 	
 	# turn on/off the cross compiler
 	#if [ -n "$(profile_get_key cross-compile)" ]
@@ -59,13 +59,13 @@ open_iscsi_tools_compile::()
 	fi
 	
 
-    [ -e "${TEMP}/open-iscsi-tools" ] && rm -r ${TEMP}/open-iscsi-tools
-    mkdir -p ${TEMP}/open-iscsi-tools
+    [ -e "${TEMP}/open-iscsi-tools" ] && rm -r "${TEMP}/open-iscsi-tools"
+    mkdir -p "${TEMP}/open-iscsi-tools"
 
-    compile_generic DESTDIR=${TEMP}/open-iscsi-tools install_programs
-    compile_generic DESTDIR=${TEMP}/open-iscsi-tools install_etc
-	cp usr/iscsistart ${TEMP}/open-iscsi-tools/usr/sbin    
-	cd ${TEMP}/open-iscsi-tools
+    compile_generic DESTDIR="${TEMP}/open-iscsi-tools install_programs"
+    compile_generic DESTDIR="${TEMP}/open-iscsi-tools install_etc"
+	cp usr/iscsistart "${TEMP}/open-iscsi-tools/usr/sbin"
+	cd "${TEMP}/open-iscsi-tools"
 
     genkernel_generate_package "open-iscsi-${OPENISCSI_VER}-tools" "."
 

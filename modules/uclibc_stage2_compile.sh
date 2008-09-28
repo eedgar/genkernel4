@@ -10,8 +10,8 @@ uclibc_stage2_compile::()
 	[ -f "${UCLIBC_SRCTAR}" ] || die "Could not find uclibc source tarball: ${UCLIBC_SRCTAR}!"
 
 	cd "${CACHE_DIR}"
-	rm -rf ${UCLIBC_DIR} > /dev/null
-	unpack ${UCLIBC_SRCTAR} || die 'Could not extract uclibc source tarball!'
+	rm -rf "${UCLIBC_DIR}" > /dev/null
+	unpack "${UCLIBC_SRCTAR}" || die 'Could not extract uclibc source tarball!'
 	[ -d "${UCLIBC_DIR}" ] || die 'uclibc directory ${UCLIBC_DIR} is invalid!'
 
 	cd "${UCLIBC_DIR}"

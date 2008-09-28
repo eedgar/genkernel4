@@ -11,8 +11,8 @@ gcc_stage1_compile::()
 	[ -f "${GCC_SRCTAR}" ] || die "Could not find gcc source tarball: ${GCC_SRCTAR}!"
 
 	cd "${CACHE_DIR}"
-	rm -rf ${GCC_DIR} > /dev/null
-	unpack ${GCC_SRCTAR} || die 'Could not extract gcc source tarball!'
+	rm -rf "${GCC_DIR}" > /dev/null
+	unpack "${GCC_SRCTAR}" || die 'Could not extract gcc source tarball!'
 	[ -d "${GCC_DIR}" ] || die 'gcc directory ${GCC_DIR} is invalid!'
 
 	# Apply patches

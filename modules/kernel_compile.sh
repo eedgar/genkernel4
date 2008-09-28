@@ -11,14 +11,14 @@ kernel_compile::()
     compile_generic ${KERNEL_ARGS} $(profile_get_key kernel-make-directive)
     RES=$?
     rm -rf "${TEMP}/kernel-compile" > /dev/null
-    mkdir ${TEMP}/kernel-compile
+    mkdir "${TEMP}/kernel-compile"
     install -D "$(profile_get_key kernel-binary)" "${TEMP}/kernel-compile/$(profile_get_key kernel-binary)"
     cp "System.map" "${TEMP}/kernel-compile"
     cp .config "${TEMP}/kernel-compile"
-    cd ${TEMP}/kernel-compile
+    cd "${TEMP}/kernel-compile"
     genkernel_generate_package "kernel-${KV_FULL}" "."
-    cd $(profile_get_key kbuild-output)
-    rm -r ${TEMP}/kernel-compile
+    cd "$(profile_get_key kbuild-output)"
+    rm -r "${TEMP}/kernel-compile"
     
     if [ "$RES" == "0" ]
     then

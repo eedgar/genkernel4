@@ -33,8 +33,8 @@ busybox_compile::()
 		die 'Error: No busybox .config specified, or file not found!'
 	fi
 	cd "${TEMP}"
-	rm -rf ${BUSYBOX_DIR} > /dev/null
-	unpack ${BUSYBOX_SRCTAR} || die 'Could not extract busybox source tarball!'
+	rm -rf "${BUSYBOX_DIR}" > /dev/null
+	unpack "${BUSYBOX_SRCTAR}" || die 'Could not extract busybox source tarball!'
 	[ -d "${BUSYBOX_DIR}" ] || die 'Busybox directory ${BUSYBOX_DIR} is invalid!'
 	cd "${BUSYBOX_DIR}" > /dev/null
 	gen_patch ${FIXES_PATCHES_DIR}/busybox/${BUSYBOX_VER} .

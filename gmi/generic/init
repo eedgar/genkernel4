@@ -252,7 +252,7 @@ do
 				break
 			fi
 		else
-			rm -rf ${mountpoint}
+			rm -rf "${mountpoint}"
 			bad_msg "Mounting of '${rootfs}' failed"
 			bad_msg "Help for the '${fs_loader}' filesystem loader:"
 			${FSLOADERS}/${fs_loader} --help

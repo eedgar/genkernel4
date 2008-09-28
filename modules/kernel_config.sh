@@ -36,7 +36,7 @@ kernel_config::()
 	    # Mismatched kbuild_outputs and kernel source trees give errors
 	    if ! cat ${KBUILD_OUTPUT}/include/config/kernel.release 2>/dev/null | egrep "^${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}" &>/dev/null; then
 		print_info 1 "Cleaning kbuild_output to build a new kernel version"
-		rm -rf ${KBUILD_OUTPUT}/*
+		rm -rf "${KBUILD_OUTPUT}/*"
 	    fi
 
             if [ -f "$(profile_get_key kernel-tree)/localversion-genkernel" ]

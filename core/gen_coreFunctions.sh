@@ -322,7 +322,7 @@ setup_cache_dir()
 		for i in ${CACHE_DIR_CONTENTS}
 		do
 			print_info 1 "	 >> removing ${i}"
-			rm ${CACHE_DIR}/${i}
+			rm "${CACHE_DIR}/${i}"
 		done
 	fi
 }
